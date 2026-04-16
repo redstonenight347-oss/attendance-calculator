@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1761150355800,
+    "name": "C",
+    "total": 68,
+    "attended": 68
+  },
+  {
+    "id": 1761150451423,
+    "name": "Maths",
+    "total": 68,
+    "attended": 65
+  },
+  {
+    "id": 1761150477871,
+    "name": "FIT",
+    "total": 68,
+    "attended": 66
+  },
+  {
+    "id": 1761150501806,
+    "name": "English",
+    "total": 45,
+    "attended": 43
+  },
+  {
+    "id": 1761150525486,
+    "name": "Sanskrit",
+    "total": 44,
+    "attended": 43
+  },
+  {
+    "id": 1761150551627,
+    "name": "CV",
+    "total": 34,
+    "attended": 31
+  },
+  {
+    "id": 1761150569288,
+    "name": "C-Lab",
+    "total": 23,
+    "attended": 20
+  },
+  {
+    "id": 1761150605936,
+    "name": "FIT-Lab",
+    "total": 23,
+    "attended": 23
+  }
+]

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Calculator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Attendance Calculator</h1>
+        </header>
+        
+        <div class="overall-stats">
+            <div class="overall-card">
+                <h3>Overall Attendance</h3>
+                <div class="percentage" id="overallPercentage">0%</div>
+                <div class="status" id="overallStatus">No subjects added</div>
+                <div class="alert" id="alertMessage"></div>
+            </div>
+        </div>
+        
+        <div class="add-subject-section">
+            <button class="btn btn-primary" id="addSubjectBtn">+ Add Subject</button>
+            <button class="btn btn-secondary" id="exportBtn">⬇️ Export Data</button>
+            <button class="btn btn-secondary" id="importBtn">⬆️ Import Data</button>
+            <input type="file" id="importFile" accept=".json" style="display:none;">
+        </div>
+    </div>
+
+        <div class="subjects-container" id="subjectsContainer">
+            <!-- Subjects will be dynamically added here -->
+        </div>
+        
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
