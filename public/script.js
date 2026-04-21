@@ -14,8 +14,9 @@ async function postrequest() {
         console.log(response);
     }
     catch (err) {
-        console.log(err.message);
-        output1.textContent = err.message;
+        const error = await err.json();
+        console.log(error.error);
+        output1.textContent = error.error;
     }
 }
 
