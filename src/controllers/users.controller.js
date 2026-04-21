@@ -12,22 +12,21 @@ export async function getUser(req, res){
     const name = req.query.name;
 
     if(!name || name.trim() === "") {
-      return res.status(400).json({ error: "Name required"});
+      return res.status(400).json({ message: "*name required"});
     }
 
     console.log("Name: " + name);
     const user = await getUserByName(name);
 
-    if(!user || user === []){
-      res.status(500).json({ error: "Failed to get user details" });
-      return;
+    if(!user || user.length === 0){
+      return res.status(500).json({ message: "failed to get user details" });   
     }
-
-    res.json(user)  
+    console.log(user[0])
+    res.json(user[0])  
   }
   catch (err) {
-    console.log(err.message);
-    res.status(500).json({ error: "Failed to get user details" });
+    console.log(err);
+    res.status(500).json({ message: "failed to get user details" });
   }
 
 };
@@ -38,11 +37,11 @@ export async function createUser(req, res) {
     const { name, email} = req.body;
 
     if(!name || name.trim() === "") {
-      res.status(400).json({ error: "Name required"});
+      res.status(400).json({ message: "*name required"});
       return;
     }
     if(!email || email.trim() === "") {
-      res.status(400).json({ error: "email required"});
+      res.status(400).json({ message: "*email required"});
       return;
     }
 
@@ -54,7 +53,7 @@ export async function createUser(req, res) {
   }
   catch (err) {
     console.log(err);
-    res.status(500).json({error: "User couldn't insert"});
+    res.status(500).json({ message: "User couldn't insert"});
   }
 
 };
