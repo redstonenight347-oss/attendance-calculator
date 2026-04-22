@@ -3,7 +3,7 @@ import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
  
 export async function getUserByName(name) {
-  console.log("GET services hit");
+  console.log("GET service hit");
   return await db
     .select()
     .from(users)
@@ -11,7 +11,7 @@ export async function getUserByName(name) {
 }
 
 export async function createUserService(name, email) {
-  console.log("POST services hit");
+  console.log("POST service hit");
 
   await db
       .insert(users).values({

@@ -1,10 +1,5 @@
-import express from 'express';
 import { getUserByName, createUserService } from "../services/users.services.js";
 
-
-const app = express();
-
-app.use(express.json());
 
 export async function getUser(req, res){
 
@@ -21,6 +16,8 @@ export async function getUser(req, res){
     if(!user || user.length === 0){
       return res.status(500).json({ message: "failed to get user details" });   
     }
+
+    
     console.log(user[0])
     res.json(user[0])  
   }
@@ -37,17 +34,16 @@ export async function createUser(req, res) {
     const { name, email} = req.body;
 
     if(!name || name.trim() === "") {
-      res.status(400).json({ message: "*name required"});
-      return;
+      return res.status(400).json({ message: "*name required"});
     }
     if(!email || email.trim() === "") {
-      res.status(400).json({ message: "*email required"});
-      return;
+      return res.status(400).json({ message: "*email required"}); 
     }
 
 
     console.log("Name: " + name,"Email: " + email)
     await createUserService(name, email);
+
 
     res.json({message: "User inserted"});
   }
