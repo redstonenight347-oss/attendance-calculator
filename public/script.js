@@ -28,14 +28,12 @@ async function postrequest() {
 
 
 async function getrequest() {
-    const get = document.querySelector("#getuser").value;
+    const userID = document.querySelector("#getuser").value;
     const attendanceOutput = document.querySelector("#attendanceOutput");
-
-    attendanceOutput.innerHTML = "";
 
     try {
         
-        const getUser = await fetch(`http://192.168.31.159:3000/users/attendance?id=${get}`);
+        const getUser = await fetch(`http://192.168.31.159:3000/${userID}/attendance`);
         const response = await getUser.json();
         
         if(response.message){
@@ -44,14 +42,12 @@ async function getrequest() {
             return;
         }
 
+        response.forEach(item => {
+            const div = document.createElement("div");
 
-        attendanceOutput.innerHTML = `<div>
-            ID: ${response.id} <br>
-            UsersID: ${response.userId} <br>
-            TimeTableID: ${response.timetableID} <br>
-            Date: ${response.date} <br>
-            Created at: ${response.createdAT}
-        </div>`;
+            div.innerHTML = `<strong>${item.subject}</strong>: ${item.percentage}%`
+            attendanceOutput.appendChild(div);
+        });
 
         console.log(response);
     }

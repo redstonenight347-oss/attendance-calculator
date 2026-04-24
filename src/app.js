@@ -9,6 +9,6 @@ app.use(express.static("public"));
 
 app.use("/users", userRoutes);
 
-app.use("/users/attendance", attendanceRoutes); 
+app.use("/:userID/attendance", attendanceRoutes); 
 
 export default app;

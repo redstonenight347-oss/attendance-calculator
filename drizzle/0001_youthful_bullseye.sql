@@ -1,0 +1,1 @@
+ALTER TABLE "timetable" ADD CONSTRAINT "timetable_period_number_unique" UNIQUE("period_number");

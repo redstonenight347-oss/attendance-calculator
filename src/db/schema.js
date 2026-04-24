@@ -1,31 +1,55 @@
-import { pgTable, serial, integer, text, timestamp, date, time} from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, date } from "drizzle-orm/pg-core";
+import { uniqueIndex } from "drizzle-orm/pg-core";
 
-//Users
-
-export const users = pgTable("users",{
+// USERS
+export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").unique().notNull(),
-  createdAT: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-//Timetable
-
-export const timetable = pgTable("timetable", {
+// SUBJECTS
+export const subjects = pgTable("subjects", {
   id: serial("id").primaryKey(),
-  userId: integer("user-id").references (() => users.id),
-  subject: text("subject").notNull(),
-  dayOfWeek: integer("day_of_week").notNull(),
-  startTime: time("start_time").notNull(),
-  endTime: time("end_time").notNull(),
+  name: text("name").notNull(),
 });
 
-//Attendance logs
+// TIMETABLE
+export const timetable = pgTable(
+  "timetable",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id),
+    subjectId: integer("subject_id").references(() => subjects.id),
+    dayOfWeek: text("day_of_week").notNull(),
+    periodNumber: integer("period_number").notNull(),
+  },
+  (table) => ({
+    uniqueTimetable: uniqueIndex("unique_timetable").on(
+      table.userId,
+      table.dayOfWeek,
+      table.periodNumber
+    ),
+  })
+);
 
-export const attendanceLogs = pgTable("attendance_logs", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
-  timetableID: integer("timetable_id").references(() => timetable.id),
-  date: date("date").notNull(),
-  createdAT: timestamp("created_at").defaultNow(),
-});
+// ATTENDANCE LOGS
+export const attendanceLogs = pgTable(
+  "attendance_logs",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id),
+    timetableId: integer("timetable_id").references(() => timetable.id),
+    date: date("date").notNull(),
+    status: text("status").notNull(), // "present" | "absent"
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueAttendance: uniqueIndex("unique_attendance").on(
+      table.userId,
+      table.timetableId,
+      table.date
+    ),
+  })
+);

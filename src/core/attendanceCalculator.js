@@ -1,67 +1,38 @@
-function calculateAttendence(attendanceLogs){
-  const result = {}
-  const total = {}
-  
-  for(const log of attendanceLogs){
-    for(const entry of log.entries){
-      const subject = entry.subject
+export function getPercentage(logs) {
+  const result = {};
 
-      if(!result[subject]){
-        result[subject] = 0
-        total[subject] = 0
-      }
+  for (const log of logs) {
+    const { subject, status } = log;
 
-      if(entry.status !== "cancelled"){
-        total[subject] += 1
-      }
+    // initialize subject if not exists
+    if (!result[subject]) {
+      result[subject] = {
+        subject,
+        total: 0,
+        attended: 0,
+      };
+    }
 
-      if(entry.status === "present"){
-        result[subject] += 1
-      }
+    // increment total
+    result[subject].total++;
+
+    // increment attended
+    if (status.toLowerCase() === "present") {
+      result[subject].attended++;
     }
   }
-  
-  const percentage = {}
 
-  for(const subject in result){
-    percentage[subject] = ((result[subject] / total[subject]) * 100).toFixed(2);
+  const output = [];
+  // calculate percentage
+  for (const subject in result) {
+    const { total, attended } = result[subject];
+  
+    output.push({
+      subject,
+      total,
+      attended,
+      percentage: total === 0 ? 0 : Number(((attended / total) * 100).toFixed(2))});
   }
-  
-  return percentage;
+
+  return output;
 }
-
-//***test entries***
-
-// const attendanceLogs = [{
-//   date: "01-04-2026",
-//   entries: [{
-//     subject: "dbms",
-//     status: "present"  // status: "present" || "absent" || "bunk" 
-//   },{
-//     subject: "ds",
-//     status: "present"
-//   },{
-//     subject: "english",
-//     status: "present"
-//   },{
-//     subject: "coa",
-//     status: "present"
-//   },{
-//     subject: "evs",
-//     status: "present"
-//   },{
-//     subject: "dbmsLab",
-//     status: "absent"
-//   },{
-//     subject: "dbmsLab",
-//     status: "present"
-//   },{
-//     subject: "dbmsLab",
-//     status: "absent"
-//   }]
-// }]
-
-
-console.log(calculateAttendence(attendanceLogs))
-
-module.exports = calculateAttendence(attendanceLogs)
