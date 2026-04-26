@@ -1,4 +1,4 @@
-export function getPercentage(logs) {
+export function getOverallPercentage(logs) {
   const result = {};
 
   for (const log of logs) {

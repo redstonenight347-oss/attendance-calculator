@@ -1,28 +1,30 @@
-import { getAttendanceLogs } from "../services/attendance.services.js";
-import { getPercentage } from "../core/attendanceCalculator.js";
+import { getSubjectStats, getOverallPercentage } from "../services/attendance.services.js";
 
 export async function getAttendance(req, res) {
   const userID = req.params.userID;
-  
+ 
   try {
 
     if(!userID || isNaN(userID)){
       console.log("attendance")
-      return res.status(400).json({ message: "*id required"});
+      return res.status(400).json({ message: "*proper id required"});
     }
 
     console.log("userID: "+userID);
-    const attendanceData = await getAttendanceLogs(userID);
-
+    const attendanceData = await getSubjectStats(userID);
+console.log(attendanceData.rows)
     
-    if(!attendanceData || attendanceData.length === 0){
-      return res.status(500).json({ message: "Couldn't collect logs"});
+      if(!attendanceData || attendanceData.rows.length === 0){
+      return res.status(404).json({ message: "No data found"});
     }
-    
 
-    const percentageData = await getPercentage(attendanceData);
-    console.log(percentageData)
-    res.json(percentageData);
+
+    const overallPercentage = await getOverallPercentage(attendanceData.rows);
+console.log(overallPercentage)
+    res.json({
+      subjects: attendanceData.rows, 
+      overall: overallPercentage
+    });
   }
   catch (err) {
     console.log(err);

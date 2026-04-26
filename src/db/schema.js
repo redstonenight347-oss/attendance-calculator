@@ -1,32 +1,55 @@
-import { pgTable, serial, integer, text, timestamp, date } from "drizzle-orm/pg-core";
-import { uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable,serial,integer,text,timestamp,date,uniqueIndex,pgEnum } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
-// USERS
+// enums
+export const dayEnum = pgEnum("day_enum", [
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+]);
+
+export const attendanceStatusEnum = pgEnum("attendance_status", ["present","absent","cancelled"]);
+
+// users
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").unique().notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// SUBJECTS
-export const subjects = pgTable("subjects", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-});
-
-// TIMETABLE
-export const timetable = pgTable(
-  "timetable",
+// subjects
+export const subjects = pgTable("subjects",
   {
     id: serial("id").primaryKey(),
-    userId: integer("user_id").references(() => users.id),
-    subjectId: integer("subject_id").references(() => subjects.id),
-    dayOfWeek: text("day_of_week").notNull(),
-    periodNumber: integer("period_number").notNull(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
-    uniqueTimetable: uniqueIndex("unique_timetable").on(
+    uniqueSubjectPerUser: uniqueIndex("unique_subject_per_user").on(
+      table.userId,
+      table.name
+    ),
+  })
+);
+
+// timetable
+export const timetable = pgTable("timetable",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    subjectId: integer("subject_id").notNull().references(() => subjects.id, { onDelete: "cascade" }),
+    dayOfWeek: dayEnum("day_of_week").notNull(),
+    periodNumber: integer("period_number").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueTimetableSlot: uniqueIndex("unique_timetable_slot").on(
       table.userId,
       table.dayOfWeek,
       table.periodNumber
@@ -34,22 +57,40 @@ export const timetable = pgTable(
   })
 );
 
-// ATTENDANCE LOGS
-export const attendanceLogs = pgTable(
-  "attendance_logs",
+// attendance logs
+export const attendanceLogs = pgTable("attendance_logs",
   {
     id: serial("id").primaryKey(),
-    userId: integer("user_id").references(() => users.id),
-    timetableId: integer("timetable_id").references(() => timetable.id),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    timetableId: integer("timetable_id").notNull().references(() => timetable.id, { onDelete: "cascade" }),
     date: date("date").notNull(),
-    status: text("status").notNull(), // "present" | "absent"
+    status: attendanceStatusEnum("status").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
-    uniqueAttendance: uniqueIndex("unique_attendance").on(
+    uniqueAttendancePerDay: uniqueIndex("unique_attendance_per_day").on(
       table.userId,
       table.timetableId,
       table.date
+    ),
+  })
+);
+
+// attendance summary
+export const attendanceSummary = pgTable("attendance_summary",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    subjectId: integer("subject_id").notNull().references(() => subjects.id, { onDelete: "cascade" }),
+    totalClasses: integer("total_classes").notNull().default(0),
+    attendedClasses: integer("attended_classes").notNull().default(0),
+    possibleLeaves: integer("possible_leaves").default(0),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    uniqueSummaryPerSubject: uniqueIndex("unique_summary_per_subject").on(
+      table.userId,
+      table.subjectId
     ),
   })
 );

@@ -2,7 +2,7 @@ async function postrequest() {
     const name = document.querySelector("#name").value;
     const email = document.querySelector("#email").value;
     const output1 = document.querySelector("#output1");
-    
+
     output1.textContent = "";
 
     try {
@@ -29,32 +29,56 @@ async function postrequest() {
 
 async function getrequest() {
     const userID = document.querySelector("#getuser").value;
-    const attendanceOutput = document.querySelector("#attendanceOutput");
+    const subjects = document.querySelector("#subjects");
+    const overall = document.querySelector("#overall");
+
+    subjects.textContent = '';
 
     try {
         
-        const getUser = await fetch(`http://192.168.31.159:3000/${userID}/attendance`);
-        const response = await getUser.json();
-        
-        if(response.message){
-            attendanceOutput.textContent = response.message;
-            console.log(response);
+        const res = await fetch(`/${userID}/attendance`);
+        const data = await res.json();
+
+        if(!res.ok){
+            subjects.textContent = res.message;
+            console.log(res);
             return;
         }
 
-        response.forEach(item => {
-            const div = document.createElement("div");
+        displaySubjects(data.subjects);
+        displayOverall(data.overall);
 
-            div.innerHTML = `<strong>${item.subject}</strong>: ${item.percentage}%`
-            attendanceOutput.appendChild(div);
-        });
-
-        console.log(response);
+        console.log(res);
     }
     catch (err) {
-        console.log("frontend catch")
-        const error = await err.json();
-        console.log(error.error);
-        attendanceOutput.textContent = error;
+        console.log("frontend catch", err)
+        subjects.textContent = err.message || "Something went wrong";
     }
+}
+
+function displaySubjects(subjects) {
+    const container = document.getElementById("subjects");
+    container.innerHTML = "";
+
+    subjects.forEach(s => {
+        const div = document.createElement("div");
+        div.innerHTML = `
+            <strong>${s.subject}</strong><br>
+            Total: ${s.total_classes} |
+            Attended: ${s.attended_classes} |   
+            percentage: ${s.percentage}%
+            <hr>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function displayOverall(overall) {
+    const container = document.getElementById("overall");
+
+    container.innerHTML = `
+        Total Classes: ${overall.total_classes}<br>
+        Attended: ${overall.attended_classes}<br>
+        Percentage: ${overall.percentage}%
+    `;
 }
