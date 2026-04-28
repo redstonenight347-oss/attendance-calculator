@@ -1,4 +1,4 @@
-import { pgTable,serial,integer,text,timestamp,date,uniqueIndex,pgEnum } from "drizzle-orm/pg-core";
+import { pgTable,serial,integer,text,timestamp,date,uniqueIndex,index,pgEnum } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // enums
@@ -54,6 +54,7 @@ export const timetable = pgTable("timetable",
       table.dayOfWeek,
       table.periodNumber
     ),
+    subjectIdx: index("idx_timetable_subject").on(table.subjectId),
   })
 );
 
@@ -73,6 +74,9 @@ export const attendanceLogs = pgTable("attendance_logs",
       table.timetableId,
       table.date
     ),
+    userIdx: index("idx_attendance_user").on(table.userId),
+    timetableIdx: index("idx_attendance_timetable").on(table.timetableId),
+    statusIdx: index("idx_attendance_status").on(table.status),
   })
 );
 

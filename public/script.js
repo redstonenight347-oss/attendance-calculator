@@ -22,17 +22,17 @@ async function postrequest() {
         console.log("frontend catch")
         const error = await err.json();
         console.log(error.error);
-        output1.textContent = error;
+        output1.innerHTML = `<p>${error}</p>`;
     }
 }
 
 
 async function getrequest() {
     const userID = document.querySelector("#getuser").value;
-    const subjects = document.querySelector("#subjects");
-    const overall = document.querySelector("#overall");
+    const output2 = document.querySelector("#output2");
 
-    subjects.textContent = '';
+    output2.innerHTML = "";
+
 
     try {
         
@@ -40,7 +40,7 @@ async function getrequest() {
         const data = await res.json();
 
         if(!res.ok){
-            subjects.textContent = res.message;
+            output2.innerHTML = `<p>${data.message}</p>`;
             console.log(res);
             return;
         }
@@ -52,33 +52,39 @@ async function getrequest() {
     }
     catch (err) {
         console.log("frontend catch", err)
-        subjects.textContent = err.message || "Something went wrong";
+        output2.textContent = err.message || "Something went wrong";
     }
 }
 
 function displaySubjects(subjects) {
-    const container = document.getElementById("subjects");
-    container.innerHTML = "";
+    const output2 = document.getElementById("output2");
+    output2.innerHTML = "<h3>Subjects</h3>";
 
     subjects.forEach(s => {
         const div = document.createElement("div");
         div.innerHTML = `
-            <strong>${s.subject}</strong><br>
-            Total: ${s.total_classes} |
-            Attended: ${s.attended_classes} |   
-            percentage: ${s.percentage}%
-            <hr>
+            <div>
+                <strong>${s.subject_name}</strong><br>
+                Total: ${s.total_classes} |
+                Attended: ${s.attended_classes} |   
+                percentage: ${s.attendance_percentage}%
+                <hr>
+            </div>
         `;
-        container.appendChild(div);
+        output2.appendChild(div);
     });
 }
 
 function displayOverall(overall) {
-    const container = document.getElementById("overall");
+    const output2 = document.getElementById("output2");
 
-    container.innerHTML = `
-        Total Classes: ${overall.total_classes}<br>
-        Attended: ${overall.attended_classes}<br>
-        Percentage: ${overall.percentage}%
+    const overallDiv = `
+        <div>
+            <h3>Overall Attendance</h3>
+            Total Classes: ${overall.total_classes}<br>
+            Attended: ${overall.attended_classes}<br>
+            Percentage: ${overall.percentage}%
+        </div>
     `;
+    output2.innerHTML += overallDiv;
 }

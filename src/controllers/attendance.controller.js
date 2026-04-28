@@ -6,23 +6,24 @@ export async function getAttendance(req, res) {
   try {
 
     if(!userID || isNaN(userID)){
-      console.log("attendance")
       return res.status(400).json({ message: "*proper id required"});
     }
 
     console.log("userID: "+userID);
+    console.time("query");
     const attendanceData = await getSubjectStats(userID);
-console.log(attendanceData.rows)
+    console.timeEnd("query");
+
     
-      if(!attendanceData || attendanceData.rows.length === 0){
+    if(!attendanceData || attendanceData.length === 0){
       return res.status(404).json({ message: "No data found"});
     }
+    
 
+    const overallPercentage = await getOverallPercentage(attendanceData);
 
-    const overallPercentage = await getOverallPercentage(attendanceData.rows);
-console.log(overallPercentage)
     res.json({
-      subjects: attendanceData.rows, 
+      subjects: attendanceData, 
       overall: overallPercentage
     });
   }

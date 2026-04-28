@@ -1,26 +1,31 @@
 import { db } from "../db/db.js"
 import { sql } from "drizzle-orm";
  
+const cache = new Map();
+
 export async function getSubjectStats(userId) {
-  return db.execute(sql`
+  if (cache.has(userId)) return cache.get(userId);
+
+  const { rows } = await db.execute(sql`
     SELECT
-  subject,
-  total_classes,
-  attended_classes,
-  ROUND(attended_classes * 100.0 / NULLIF(total_classes, 0), 2) AS percentage
-FROM (
-  SELECT
-    s.id,
-    s.name AS subject,
-    COUNT(*) FILTER (WHERE al.status != 'cancelled') AS total_classes,
-    COUNT(*) FILTER (WHERE al.status = 'present') AS attended_classes
-  FROM attendance_logs al
-  JOIN timetable t ON al.timetable_id = t.id
-  JOIN subjects s ON t.subject_id = s.id
-  WHERE al.user_id = ${userId}
-  GROUP BY s.id, s.name
-) sub;
+      s.id AS subject_id,
+      s.name AS subject_name,
+      COUNT(*) FILTER (WHERE al.status <> 'cancelled') AS total_classes,
+      COUNT(*) FILTER (WHERE al.status = 'present') AS attended_classes,
+      ROUND(
+        COUNT(*) FILTER (WHERE al.status = 'present') * 100.0 /
+        NULLIF(COUNT(*) FILTER (WHERE al.status <> 'cancelled'), 0), 2
+        ) AS attendance_percentage
+    FROM attendance_logs al
+    JOIN timetable t ON al.timetable_id = t.id
+    JOIN subjects s ON t.subject_id = s.id
+    WHERE al.user_id = ${userId}
+    GROUP BY s.id, s.name
+    ORDER BY s.name;
   `);
+
+  cache.set(userId, rows);
+  return rows;
 }
 
 
