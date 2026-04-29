@@ -1,6 +1,6 @@
 import { db } from "../db/db.js";
 import { users } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
  
 export async function getUserByName(name) {
   console.log("GET service hit");
@@ -10,13 +10,23 @@ export async function getUserByName(name) {
     .where(eq(users.name, name));
 }
 
-export async function createUserService(name, email) {
+export async function getUserByEmail(email) {
+  return await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email));
+}
+
+export async function createUserService(name, email, password) {
   console.log("POST service hit");
 
-  await db
+  const [newUser] = await db
       .insert(users).values({
         name: name,
         email: email,
+        password: password,
       })
+      .returning();
 
+  return newUser;
 }

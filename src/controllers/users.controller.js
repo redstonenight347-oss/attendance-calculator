@@ -1,4 +1,4 @@
-import { getUserByName, createUserService } from "../services/users.services.js";
+import { getUserByName, createUserService, getUserByEmail } from "../services/users.services.js";
 
 
 export async function getUser(req, res){
@@ -28,10 +28,9 @@ export async function getUser(req, res){
 
 };
 
-export async function createUser(req, res) {
-  
+export async function signup(req, res) {
   try {
-    const { name, email} = req.body;
+    const { name, email, password } = req.body;
 
     if(!name || name.trim() === "") {
       return res.status(400).json({ message: "*name required"});
@@ -39,21 +38,55 @@ export async function createUser(req, res) {
     if(!email || email.trim() === "") {
       return res.status(400).json({ message: "*email required"}); 
     }
+    if(!password || password.trim() === "") {
+      return res.status(400).json({ message: "*password required"}); 
+    }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "*valid email required"});
     }
 
-    console.log("Name: " + name,"Email: " + email)
-    await createUserService(name, email);
+    const existingUsers = await getUserByEmail(email);
+    if (existingUsers && existingUsers.length > 0) {
+      return res.status(400).json({ message: "User with this email already exists" });
+    }
 
+    const userId = await createUserService(name, email, password);
 
-    res.json({message: "User inserted"});
+    res.json({ message: "User signed up successfully", userId: userId.id });
   }
   catch (err) {
     console.log(err);
-    res.status(500).json({ message: "User couldn't insert"});
+    res.status(500).json({ message: "User couldn't sign up" });
   }
+}
 
-};
+export async function signin(req, res) {
+  try {
+    const { email, password } = req.body;
+
+    if(!email || email.trim() === "") {
+      return res.status(400).json({ message: "*email required"}); 
+    }
+    if(!password || password.trim() === "") {
+      return res.status(400).json({ message: "*password required"}); 
+    }
+
+    const users = await getUserByEmail(email);
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const user = users[0];
+    if (user.password !== password) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    res.json({ message: "Signed in successfully", userId: user.id, name: user.name });
+  }
+  catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Sign in failed" });
+  }
+}

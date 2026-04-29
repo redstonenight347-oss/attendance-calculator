@@ -2,14 +2,14 @@ import { db } from "./db.js";
 import { users, subjects, timetable, attendanceLogs } from "./schema.js";
 
 // config
-const USER_ID = 2;
-const USER_NAME = "test User2";
-const USER_EMAIL = "test2@test.com";
+const USER_NAME = "test User4";
+const USER_EMAIL = "test4@test.com";
+const USER_PASSWORD = "password101112";
 const DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 const PERIODS_PER_DAY = 6;
 const TOTAL_DAYS = 120; // ~4 months of logs
 
-const SUBJECT_NAMES = ["Math", "Physics", "Chemistry", "English", "CS"];
+const SUBJECT_NAMES = ["JAVA", "COA", "OOPs", "English", "EVS", "JAVA Lab", "OS Lab"];
 
 // helper
 function getRandomStatus() {
@@ -34,19 +34,20 @@ function addDays(date, days) {
 async function seed() {
   console.log("Seeding...");
 
-  // 1. insert user
-  await db.insert(users).values({
-    id: USER_ID,
+  const [insertedUser] = await db.insert(users).values({
     name: USER_NAME,
     email: USER_EMAIL,
-  }).onConflictDoNothing();
+    password: USER_PASSWORD,
+  }).returning();
+
+  const currentUserId = insertedUser.id;
 
   // 2. insert subjects
   const insertedSubjects = await db
     .insert(subjects)
     .values(
       SUBJECT_NAMES.map((name) => ({
-        userId: USER_ID,
+        userId: currentUserId,
         name,
       }))
     )
@@ -60,7 +61,7 @@ async function seed() {
   for (const day of DAYS) {
     for (let p = 1; p <= PERIODS_PER_DAY; p++) {
       timetableData.push({
-        userId: USER_ID,
+        userId: currentUserId,
         subjectId: getRandomSubjectId(insertedSubjects),
         dayOfWeek: day,
         periodNumber: p,
@@ -94,7 +95,7 @@ async function seed() {
       if (slot.dayOfWeek !== dayName) continue;
 
       logs.push({
-        userId: USER_ID,
+        userId: currentUserId,
         timetableId: slot.id,
         date: currentDate.toISOString().split("T")[0],
         status: getRandomStatus(),
