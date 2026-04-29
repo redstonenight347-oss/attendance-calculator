@@ -40,6 +40,10 @@ export async function createUser(req, res) {
       return res.status(400).json({ message: "*email required"}); 
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "*valid email required"});
+    }
 
     console.log("Name: " + name,"Email: " + email)
     await createUserService(name, email);

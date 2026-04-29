@@ -24,8 +24,35 @@ export async function getSubjectStats(userId) {
     ORDER BY s.name;
   `);
 
-  cache.set(userId, rows);
-  return rows;
+  const processedRows = rows.map(row => { //row is just a single object from rows array
+    const total = Number(row.total_classes);
+    const attended = Number(row.attended_classes);
+    let bunk_available = 0;
+    let classes_needed = 0;
+    let status_message = "";
+    
+    if (total > 0) {
+      if (attended / total >= 0.75) {
+        bunk_available = Math.floor((attended * 4/3) - total);
+        status_message = `You can bunk ${bunk_available} class${bunk_available !== 1 ? 'es' : ''} and stay >= 75%.`;
+      } else {
+        classes_needed = (3 * total) - (4 * attended);
+        status_message = `You need to attend ${classes_needed} more class${classes_needed !== 1 ? 'es' : ''} to reach 75%.`;
+      }
+    } else {
+        status_message = "No classes held yet.";
+    }
+
+    return {
+      ...row,
+      bunk_available,
+      classes_needed,
+      status_message
+    };
+  });
+
+  cache.set(userId, processedRows);
+  return processedRows;
 }
 
 

@@ -13,13 +13,11 @@ export async function getAttendance(req, res) {
     console.time("query");
     const attendanceData = await getSubjectStats(userID);
     console.timeEnd("query");
-
     
     if(!attendanceData || attendanceData.length === 0){
       return res.status(404).json({ message: "No data found"});
     }
-    
-
+        
     const overallPercentage = await getOverallPercentage(attendanceData);
 
     res.json({
