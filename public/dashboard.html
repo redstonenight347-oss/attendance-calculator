@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dashboard-page">
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2>Menu</h2>
+                <button class="close-sidebar-btn" id="closeSidebarBtn">&times;</button>
+            </div>
+            
+            <div class="sidebar-profile">
+                <div class="profile-avatar">👤</div>
+                <div class="profile-info">
+                    <p class="profile-name">Student</p>
+                    <p class="profile-role">View Profile</p>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="active" onclick="showSection('dashboard-section', this)">Dashboard</a></li>
+                    <li><a href="#" onclick="showSection('timetable-section', this)">Edit Timetable</a></li>
+                    <li><a href="#" onclick="showSection('attendance-section', this)">Edit Attendance</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="logout-btn" onclick="window.location.href='/'">Log Out</button>
+            </div>
+        </aside>
+        
+        <main class="main-content">
+            <div class="mobile-header">
+                <button class="open-sidebar-btn" id="openSidebarBtn">☰</button>
+                <h2>Attendance Calc</h2>
+            </div>
+            
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="content-section">
+                <div class="dashboard-header desktop-only">
+                    <h2>Your Attendance Dashboard</h2>
+                </div>
+                <div class="section-container">
+                    <div id="output2">Loading attendance...</div>
+                </div>
+            </div>
+
+            <!-- Timetable Section -->
+            <div id="timetable-section" class="content-section" style="display: none;">
+                <div class="dashboard-header desktop-only">
+                    <h2>Edit Timetable</h2>
+                </div>
+                <div class="section-container">
+                    <h3>Manage Subjects</h3>
+                    <div class="timetable-actions top-actions">
+                        <button type="button" class="add-subject-btn" onclick="addSubjectInput()">+ Add Subject</button>
+                        <button type="button" class="delete-all-btn" onclick="deleteAllSubjects()">Delete All Subjects</button>
+                    </div>
+                    <div id="subjects-list">
+                        <!-- Subject inputs go here -->
+                    </div>
+                    <div id="timetable-output" class="error-text" style="margin-top: 10px;"></div>
+                </div>
+                <button type="button" class="floating-save-btn" onclick="saveSubjects()">Save Subjects</button>
+            </div>
+            
+            <!-- Attendance Section -->
+            <div id="attendance-section" class="content-section" style="display: none;">
+                <div class="dashboard-header desktop-only">
+                    <h2>Edit Attendance</h2>
+                </div>
+                <div class="section-container">
+                    <p>Coming soon...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <script src="dashboard.js"></script>
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const openBtn = document.getElementById('openSidebarBtn');
+        const closeBtn = document.getElementById('closeSidebarBtn');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        if (openBtn) openBtn.addEventListener('click', openSidebar);
+        if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+        if (overlay) overlay.addEventListener('click', closeSidebar);
+    </script>
+</body>
+</html>

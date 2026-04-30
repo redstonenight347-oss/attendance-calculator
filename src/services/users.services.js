@@ -1,6 +1,7 @@
 import { db } from "../db/db.js";
-import { users } from "../db/schema.js";
-import { eq, and } from "drizzle-orm";
+import { users, subjects } from "../db/schema.js";
+import { eq, and, inArray } from "drizzle-orm";
+import { clearUserCache } from "./attendance.services.js";
  
 export async function getUserByName(name) {
   console.log("GET service hit");
@@ -29,4 +30,31 @@ export async function createUserService(name, email, password) {
       .returning();
 
   return newUser;
+}
+
+export async function saveSubjectsService(userId, subjectList) {
+  clearUserCache(userId);
+
+  const existingSubjects = await db.select().from(subjects).where(eq(subjects.userId, parseInt(userId)));
+  const existingIds = existingSubjects.map(s => s.id);
+  
+  const incomingIds = subjectList.map(s => s.id).filter(id => id != null);
+  const toDeleteIds = existingIds.filter(id => !incomingIds.includes(id));
+  
+  if (toDeleteIds.length > 0) {
+    await db.delete(subjects).where(inArray(subjects.id, toDeleteIds));
+  }
+  
+  for (const sub of subjectList) {
+    if (sub.id && existingIds.includes(sub.id)) {
+      await db.update(subjects)
+        .set({ name: sub.name })
+        .where(eq(subjects.id, sub.id));
+    } else {
+      await db.insert(subjects)
+        .values({ userId: parseInt(userId), name: sub.name })
+        .onConflictDoNothing();
+    }
+  }
+  return true;
 }

@@ -1,4 +1,4 @@
-import { getUserByName, createUserService, getUserByEmail } from "../services/users.services.js";
+import { getUserByName, createUserService, getUserByEmail, saveSubjectsService } from "../services/users.services.js";
 
 
 export async function getUser(req, res){
@@ -88,5 +88,23 @@ export async function signin(req, res) {
   catch (err) {
     console.log(err);
     res.status(500).json({ message: "Sign in failed" });
+  }
+}
+
+export async function saveSubjects(req, res) {
+  try {
+    const { id } = req.params;
+    const { subjects } = req.body;
+
+    if (!subjects || !Array.isArray(subjects)) {
+      return res.status(400).json({ message: "Subjects array is required" });
+    }
+
+    await saveSubjectsService(id, subjects);
+
+    res.json({ message: "Subjects saved successfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to save subjects" });
   }
 }

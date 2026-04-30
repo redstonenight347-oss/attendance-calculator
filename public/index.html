@@ -6,31 +6,26 @@
     <title>Attendance Calculator</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="section-container">
+<body class="auth-page">
+    <div class="section-container" id="signin-section">
         <h2>Sign In</h2>
         <input id="signin-email" type="text" placeholder="Email">
         <input id="signin-password" type="password" placeholder="Password">
         <br>
         <button type="button" id="signin-btn" onclick="signinRequest()">Sign In</button>
+        <span class="toggle-link" onclick="toggleAuth()">Don't have an account? Sign Up</span>
         <div id="signin-output"></div> 
     </div>
 
-    <div class="section-container">
+    <div class="section-container hidden" id="signup-section">
         <h2>Sign Up</h2>
         <input id="signup-name" type="text" placeholder="Full Name">
         <input id="signup-email" type="text" placeholder="Email">
         <input id="signup-password" type="password" placeholder="Password">
         <br>
         <button type="button" id="signup-btn" onclick="signupRequest()">Sign Up</button>
+        <span class="toggle-link" onclick="toggleAuth()">Already have an account? Sign In</span>
         <div id="signup-output"></div> 
-    </div>
-    <div class="section-container">
-        <h2>Get User Attendance</h2>
-        <input id="getuser" type="text" placeholder="User ID">
-        <br>
-        <button id="check-btn" onclick="getrequest()">Check Attendance</button>
-        <div id="output2"></div>
     </div>
 
     <script src="script.js"></script>
