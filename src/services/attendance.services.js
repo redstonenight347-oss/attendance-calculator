@@ -1,12 +1,28 @@
 import { db } from "../db/db.js"
-import { sql } from "drizzle-orm";
+import { sql, eq, inArray } from "drizzle-orm";
+import { timetable } from "../db/schema.js";
  
+// Cache stores dashboard data: { subjects, overall, timetable }
 const cache = new Map();
 
-export async function getSubjectStats(userId) {
+export async function getDashboardData(userId) {
   if (cache.has(userId)) return cache.get(userId);
 
-    const { rows } = await db.execute(sql`
+  const stats = await getSubjectStatsInternal(userId);
+  const timetable = await getTimetableInternal(userId);
+  const overall = getOverallPercentage(stats);
+
+  const data = { subjects: stats, overall, timetable };
+  cache.set(userId, data);
+  return data;
+}
+
+export function clearUserCache(userId) {
+  cache.delete(userId);
+}
+
+async function getSubjectStatsInternal(userId) {
+  const { rows } = await db.execute(sql`
     SELECT
       s.id AS subject_id,
       s.name AS subject_name,
@@ -24,7 +40,7 @@ export async function getSubjectStats(userId) {
     ORDER BY s.name;
   `);
 
-  const processedRows = rows.map(row => { //row is just a single object from rows array
+  return rows.map(row => {
     const total = Number(row.total_classes);
     const attended = Number(row.attended_classes);
     let bunk_available = 0;
@@ -50,15 +66,38 @@ export async function getSubjectStats(userId) {
       status_message
     };
   });
-
-  cache.set(userId, processedRows);
-  return processedRows;
 }
 
-export function clearUserCache(userId) {
-  cache.delete(userId);
+async function getTimetableInternal(userId) {
+  const { rows } = await db.execute(sql`
+    SELECT 
+      t.day_of_week,
+      t.period_number,
+      s.id as subject_id,
+      s.name as subject_name
+    FROM timetable t
+    JOIN subjects s ON s.id = t.subject_id
+    WHERE t.user_id = ${userId}
+    ORDER BY t.day_of_week, t.period_number;
+  `);
+  
+  const timetable = {
+    monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: []
+  };
+  
+  rows.forEach(row => {
+    const day = row.day_of_week.toLowerCase();
+    const idx = row.period_number - 1;
+    
+    while (timetable[day].length <= idx) {
+      timetable[day].push({ id: null, name: '' });
+    }
+    
+    timetable[day][idx] = { id: row.subject_id, name: row.subject_name };
+  });
+  
+  return timetable;
 }
-
 
 export function getOverallPercentage(attendanceData){
   let total = 0;
@@ -76,4 +115,54 @@ export function getOverallPercentage(attendanceData){
     attended_classes: attended,
     percentage,
   };
+}
+
+export async function saveTimetableService(userId, timetableData) {
+  clearUserCache(userId);
+  const uId = parseInt(userId);
+
+  // 1. Fetch existing slots for this user
+  const existingSlots = await db.select().from(timetable).where(eq(timetable.userId, uId));
+  
+  // 2. Prepare incoming data from frontend
+  const incomingData = [];
+  for (const day in timetableData) {
+    const periods = timetableData[day];
+    periods.forEach((period, index) => {
+      if (period.id) {
+        incomingData.push({
+          userId: uId,
+          subjectId: parseInt(period.id),
+          dayOfWeek: day.toLowerCase(),
+          periodNumber: index + 1
+        });
+      }
+    });
+  }
+
+  // 3. Delete slots that have been removed in the new timetable
+  const incomingKeys = incomingData.map(d => `${d.dayOfWeek}-${d.periodNumber}`);
+  const toDelete = existingSlots.filter(s => !incomingKeys.includes(`${s.dayOfWeek}-${s.periodNumber}`));
+  
+  if (toDelete.length > 0) {
+    const toDeleteIds = toDelete.map(s => s.id);
+    await db.delete(timetable).where(inArray(timetable.id, toDeleteIds));
+  }
+
+  // 4. Update existing slots or insert new ones
+  // This preserves the ID for existing (day, period) slots, keeping attendance logs intact.
+  for (const slot of incomingData) {
+    const existing = existingSlots.find(s => s.dayOfWeek === slot.dayOfWeek && s.periodNumber === slot.periodNumber);
+    if (existing) {
+      if (existing.subjectId !== slot.subjectId) {
+        await db.update(timetable)
+          .set({ subjectId: slot.subjectId })
+          .where(eq(timetable.id, existing.id));
+      }
+    } else {
+      await db.insert(timetable).values(slot);
+    }
+  }
+  
+  return true;
 }

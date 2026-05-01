@@ -25,6 +25,7 @@
             <nav class="sidebar-nav">
                 <ul>
                     <li><a href="#" class="active" onclick="showSection('dashboard-section', this)">Dashboard</a></li>
+                    <li><a href="#" onclick="showSection('subjects-section', this)">Edit Subjects</a></li>
                     <li><a href="#" onclick="showSection('timetable-section', this)">Edit Timetable</a></li>
                     <li><a href="#" onclick="showSection('attendance-section', this)">Edit Attendance</a></li>
                 </ul>
@@ -50,10 +51,10 @@
                 </div>
             </div>
 
-            <!-- Timetable Section -->
-            <div id="timetable-section" class="content-section" style="display: none;">
+            <!-- Subjects Section -->
+            <div id="subjects-section" class="content-section" style="display: none;">
                 <div class="dashboard-header desktop-only">
-                    <h2>Edit Timetable</h2>
+                    <h2>Edit Subjects</h2>
                 </div>
                 <div class="section-container">
                     <h3>Manage Subjects</h3>
@@ -67,6 +68,53 @@
                     <div id="timetable-output" class="error-text" style="margin-top: 10px;"></div>
                 </div>
                 <button type="button" class="floating-save-btn" onclick="saveSubjects()">Save Subjects</button>
+            </div>
+            
+            <!-- Timetable Section -->
+            <div id="timetable-section" class="content-section" style="display: none;">
+                <div class="dashboard-header desktop-only">
+                    <h2>Edit Timetable</h2>
+                </div>
+                <div id="subjects-palette-container" class="section-container">
+                    <p>Drag and drop subjects to arrange them.</p>
+                    <div id="timetable-grid-container" class="timetable-grid">
+                        <!-- Draggable subject boxes will go here -->
+                    </div>
+                </div>
+
+                <div id="timetable-builder-container" class="section-container timetable-builder-container">
+                    <h3>Weekly Timetable Builder</h3>
+                    
+                    <div class="day-switcher">
+                        <button type="button" class="day-btn active" onclick="switchDay('Monday')">Mon</button>
+                        <button type="button" class="day-btn" onclick="switchDay('Tuesday')">Tue</button>
+                        <button type="button" class="day-btn" onclick="switchDay('Wednesday')">Wed</button>
+                        <button type="button" class="day-btn" onclick="switchDay('Thursday')">Thu</button>
+                        <button type="button" class="day-btn" onclick="switchDay('Friday')">Fri</button>
+                        <button type="button" class="day-btn" onclick="switchDay('Saturday')">Sat</button>
+                        <button type="button" class="day-btn" onclick="switchDay('Sunday')">Sun</button>
+                    </div>
+
+                    <div class="timetable-actions top-actions" style="margin-top: 15px; margin-bottom: 15px;">
+                        <button type="button" class="add-subject-btn" onclick="addPeriod()">+ Add Period</button>
+                        <button type="button" class="delete-all-btn" onclick="removePeriod()">- Remove Period</button>
+                    </div>
+                    
+                    <div class="timetable-table-wrapper">
+                        <h4 id="current-day-label">Monday</h4>
+                        <div id="daily-timetable-container" class="daily-row">
+                            <!-- Periods (droppable slots) go here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="timetable-overview-container" class="section-container timetable-overview-container">
+                    <h3>Timetable Overview</h3>
+                    <div id="timetable-overview-content" class="overview-list">
+                        <!-- Overview summary will be rendered here -->
+                    </div>
+                </div>
+                <button type="button" id="save-timetable-btn" class="floating-save-btn" onclick="saveTimetable()">Save Timetable</button>
             </div>
             
             <!-- Attendance Section -->

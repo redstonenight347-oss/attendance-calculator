@@ -467,7 +467,8 @@ body.dashboard-page {
 .timetable-actions.top-actions {
     margin-bottom: 15px;
     display: flex;
-    gap: 10px;
+    justify-content: center;
+    gap: 20px;
 }
 .add-subject-btn, .delete-all-btn {
     width: auto;
@@ -519,5 +520,206 @@ body.dashboard-page {
         padding: 14px 30px;
         font-size: 16px;
         min-width: 200px;
+    }
+}
+
+/* Timetable Grid */
+.timetable-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: minmax(50px, auto);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.draggable-subject {
+    background-color: #ffffff;
+    border: 1px solid #e1e8ed;
+    border-radius: 6px;
+    padding: 8px 10px;
+    text-align: center;
+    cursor: grab;
+    user-select: none; /* Disable text selection */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #2c3e50;
+    transition: transform 0.2s, box-shadow 0.2s;
+    min-height: 50px;
+}
+
+.draggable-subject:active {
+    cursor: grabbing;
+}
+
+.draggable-subject.dragging {
+    opacity: 0.5;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.draggable-subject.over {
+    border: 2px dashed #3498db;
+    background-color: #f1f8ff;
+}
+
+@media (max-width: 768px) {
+    .timetable-grid {
+        grid-template-columns: repeat(3, 1fr); /* 3 columns on mobile to keep them small */
+        gap: 8px;
+    }
+    
+    .draggable-subject {
+        font-size: 12px;
+        padding: 6px;
+        min-height: 40px;
+    }
+}
+
+/* Day Switcher */
+.day-switcher {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+.day-btn {
+    background-color: #f0f0f0;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    flex: 1;
+    min-width: 50px;
+    text-align: center;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    margin-bottom: 0;
+}
+
+.day-btn.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.day-btn:hover:not(.active) {
+    background-color: #e0e0e0;
+}
+
+/* Daily Timetable Row */
+.daily-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 0;
+    min-height: 80px;
+}
+
+.period-slot {
+    flex: 0 0 100px;
+    height: 60px;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fafafa;
+    text-align: center;
+    font-size: 13px;
+    font-weight: bold;
+    color: #95a5a6;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.period-slot.over {
+    border-color: #3498db;
+    background-color: #f1f8ff;
+}
+
+#timetable-builder-container {
+    margin-top: 50px !important;
+    border-top: 1px solid #ddd;
+    padding-top: 30px;
+}
+
+#timetable-overview-container {
+    margin-top: 50px !important;
+    border-top: 1px solid #ddd;
+    padding-top: 30px;
+}
+
+.overview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.overview-day-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    background: #fcfcfc;
+    border-radius: 8px;
+    border: 1px solid #f0f0f0;
+}
+
+.overview-day-name {
+    flex: 0 0 100px;
+    font-weight: bold;
+    color: #3498db;
+    text-transform: capitalize;
+}
+
+.overview-periods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.overview-period-item {
+    background: #e8f4f8;
+    color: #2c3e50;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    border: 1px solid #d1e9f0;
+    font-weight: 500;
+}
+
+.overview-empty {
+    color: #bdc3c7;
+    font-style: italic;
+    font-size: 13px;
+}
+
+@media (max-width: 768px) {
+    .period-slot {
+        flex: 0 0 75px;
+        height: 45px;
+        font-size: 11px;
+    }
+    
+    #timetable-builder-container {
+        margin-top: 40px !important;
+    }
+
+    #timetable-overview-container {
+        margin-top: 40px !important;
+    }
+    
+    .overview-day-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .overview-day-name {
+        flex: none;
     }
 }
