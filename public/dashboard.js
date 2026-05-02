@@ -31,6 +31,18 @@ async function getrequest(userID) {
         populateTimetableGrid(data.subjects);
         populateTimetable(data.timetable);
 
+        // Populate User Info from combined response
+        if (data.user) {
+            document.querySelectorAll('.profile-name').forEach(el => el.textContent = data.user.name);
+            const profileNameInput = document.getElementById('profile-name-input');
+            if (profileNameInput) {
+                profileNameInput.value = data.user.name;
+                window.cachedProfileName = data.user.name;
+            }
+            const profileIdDisplay = document.getElementById('profile-id-display');
+            if (profileIdDisplay) profileIdDisplay.textContent = data.user.id;
+        }
+
         console.log(res);
     }
     catch (err) {
@@ -151,23 +163,13 @@ function updateSubjectLabels() {
     });
 }
 
-function deleteAllSubjects() {
-    if (confirm("Warning: This will clear all subjects from this form. Existing data might be deleted upon saving. Are you sure?")) {
+async function deleteAllSubjects() {
+    if (await customConfirm("Warning: This will clear all subjects from this form. Existing data might be deleted upon saving. Are you sure?", "Clear All Subjects", "⚠️")) {
         document.getElementById('subjects-list').innerHTML = '';
     }
 }
 
 async function saveSubjects() {
-    if (!confirm("Warning: Saving this will overwrite your existing timetable data. Are you sure you want to proceed?")) {
-        return;
-    }
-
-    const saveBtn = document.querySelector('.floating-save-btn');
-    if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Saving...';
-    }
-
     const inputs = document.querySelectorAll('.subject-name-input');
     const subjects = [];
     inputs.forEach(input => {
@@ -182,28 +184,31 @@ async function saveSubjects() {
     });
 
     const output = document.getElementById('timetable-output');
+    output.textContent = "";
     
+    // Validation: Empty check
     if (subjects.length === 0 && (!window.cachedSubjects || window.cachedSubjects.length === 0)) {
         output.textContent = "Please add at least one subject.";
         output.className = "error-text";
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Save Subjects';
-        }
         return;
     }
 
+    // Check for changes
     if (JSON.stringify(subjects) === JSON.stringify(window.cachedSubjects || [])) {
-        output.textContent = "No changes detected.";
-        output.style.color = "grey";
-        output.className = "";
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Save Subjects';
-        }
+        await customAlert("No changes detected in your subjects.", "Info", "ℹ️");
         return;
     }
-    
+
+    // If changes detected, ask for confirmation
+    if (!(await customConfirm("Warning: Saving this will overwrite your existing timetable data. Are you sure you want to proceed?", "Save Changes", "⚠️"))) {
+        return;
+    }
+
+    const saveBtn = document.querySelector('.floating-save-btn');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+    }
     
     output.textContent = "Saving...";
     output.className = "";
@@ -405,13 +410,17 @@ async function saveTimetable() {
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('userId');
     if (!userId) {
-        alert("User ID not found in URL! Please log in again.");
+        await customAlert("User ID not found in URL! Please log in again.", "Error", "❌");
         return;
     }
 
     // Check for changes
     if (JSON.stringify(periodsData) === JSON.stringify(window.cachedTimetable || {})) {
-        alert("No changes detected in your timetable.");
+        await customAlert("No changes detected in your timetable.", "Info", "ℹ️");
+        return;
+    }
+
+    if (!(await customConfirm("Are you sure you want to save the changes to your timetable?", "Save Timetable", "⚠️"))) {
         return;
     }
 
@@ -430,14 +439,14 @@ async function saveTimetable() {
         const data = await response.json();
 
         if (response.ok) {
-            alert("Timetable saved successfully!");
+            await customAlert("Timetable saved successfully!", "Success", "✅");
             window.cachedTimetable = JSON.parse(JSON.stringify(periodsData));
         } else {
-            alert("Error saving timetable: " + data.message);
+            await customAlert("Error saving timetable: " + data.message, "Error", "❌");
         }
     } catch (err) {
         console.error("Save error:", err);
-        alert("Failed to save timetable. Please check your connection.");
+        await customAlert("Failed to save timetable. Please check your connection.", "Error", "❌");
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save Timetable';
@@ -505,6 +514,91 @@ function renderTimetableOverview() {
         row.appendChild(periodsDiv);
         container.appendChild(row);
     });
+}
+
+async function saveProfile() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+    const nameInput = document.getElementById('profile-name-input');
+    
+    if (!nameInput || !userId) {
+        await customAlert("User information missing. Please reload.", "Error", "❌");
+        return;
+    }
+    
+    const newName = nameInput.value.trim();
+    
+    if (newName === window.cachedProfileName) {
+        await customAlert("No changes detected in your profile name.", "Info", "ℹ️");
+        return;
+    }
+
+    if (!newName) {
+        await customAlert("Name cannot be empty", "Error", "❌");
+        return;
+    }
+
+    const saveBtn = document.getElementById('save-profile-btn');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
+    try {
+        const res = await fetch(`/users/${userId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: newName })
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+            await customAlert("Profile updated successfully!", "Success", "✅");
+            window.cachedProfileName = newName;
+            document.querySelectorAll('.profile-name').forEach(el => el.textContent = newName);
+        } else {
+            await customAlert(data.message || "Failed to update profile", "Error", "❌");
+        }
+    } catch (err) {
+        await customAlert("Error updating profile", "Error", "❌");
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
+    }
+}
+
+function copyUserId() {
+    const idText = document.getElementById('profile-id-display').textContent;
+    
+    // Create temporary textarea to copy from
+    const textArea = document.createElement("textarea");
+    textArea.value = idText;
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showToast("User ID copied!");
+    } catch (err) {
+        console.error("Copy failed", err);
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function showToast(message) {
+    let toast = document.querySelector('.copy-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.className = 'copy-toast';
+        document.body.appendChild(toast);
+    }
+    
+    toast.textContent = message;
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 2000);
 }
 
 

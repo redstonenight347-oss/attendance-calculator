@@ -58,3 +58,18 @@ export async function saveSubjectsService(userId, subjectList) {
   }
   return true;
 }
+
+export async function getUserById(id) {
+  return await db
+    .select()
+    .from(users)
+    .where(eq(users.id, parseInt(id)));
+}
+
+export async function updateUser(id, name) {
+  return await db
+    .update(users)
+    .set({ name: name })
+    .where(eq(users.id, parseInt(id)))
+    .returning();
+}

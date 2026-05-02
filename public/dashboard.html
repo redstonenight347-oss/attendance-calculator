@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="dashboard-page">
     <div class="app-layout">
         <aside class="sidebar" id="sidebar">
@@ -13,12 +15,13 @@
                 <h2>Menu</h2>
                 <button class="close-sidebar-btn" id="closeSidebarBtn">&times;</button>
             </div>
-            
+
             <div class="sidebar-profile">
                 <div class="profile-avatar">👤</div>
                 <div class="profile-info">
                     <p class="profile-name">Student</p>
-                    <p class="profile-role">View Profile</p>
+                    <p class="profile-role" onclick="showSection('profile-section', null)" style="cursor: pointer;">View
+                        Profile</p>
                 </div>
             </div>
 
@@ -28,19 +31,20 @@
                     <li><a href="#" onclick="showSection('subjects-section', this)">Edit Subjects</a></li>
                     <li><a href="#" onclick="showSection('timetable-section', this)">Edit Timetable</a></li>
                     <li><a href="#" onclick="showSection('attendance-section', this)">Edit Attendance</a></li>
+                    <li><a href="#" onclick="showSection('help-section', this)">Help</a></li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
                 <button class="logout-btn" onclick="window.location.href='/'">Log Out</button>
             </div>
         </aside>
-        
+
         <main class="main-content">
             <div class="mobile-header">
                 <button class="open-sidebar-btn" id="openSidebarBtn">☰</button>
                 <h2>Attendance Calc</h2>
             </div>
-            
+
             <!-- Dashboard Section -->
             <div id="dashboard-section" class="content-section">
                 <div class="dashboard-header desktop-only">
@@ -60,7 +64,8 @@
                     <h3>Manage Subjects</h3>
                     <div class="timetable-actions top-actions">
                         <button type="button" class="add-subject-btn" onclick="addSubjectInput()">+ Add Subject</button>
-                        <button type="button" class="delete-all-btn" onclick="deleteAllSubjects()">Delete All Subjects</button>
+                        <button type="button" class="delete-all-btn" onclick="deleteAllSubjects()">Delete All
+                            Subjects</button>
                     </div>
                     <div id="subjects-list">
                         <!-- Subject inputs go here -->
@@ -69,7 +74,7 @@
                 </div>
                 <button type="button" class="floating-save-btn" onclick="saveSubjects()">Save Subjects</button>
             </div>
-            
+
             <!-- Timetable Section -->
             <div id="timetable-section" class="content-section" style="display: none;">
                 <div class="dashboard-header desktop-only">
@@ -84,7 +89,7 @@
 
                 <div id="timetable-builder-container" class="section-container timetable-builder-container">
                     <h3>Weekly Timetable Builder</h3>
-                    
+
                     <div class="day-switcher">
                         <button type="button" class="day-btn active" onclick="switchDay('Monday')">Mon</button>
                         <button type="button" class="day-btn" onclick="switchDay('Tuesday')">Tue</button>
@@ -99,7 +104,7 @@
                         <button type="button" class="add-subject-btn" onclick="addPeriod()">+ Add Period</button>
                         <button type="button" class="delete-all-btn" onclick="removePeriod()">- Remove Period</button>
                     </div>
-                    
+
                     <div class="timetable-table-wrapper">
                         <h4 id="current-day-label">Monday</h4>
                         <div id="daily-timetable-container" class="daily-row">
@@ -114,9 +119,10 @@
                         <!-- Overview summary will be rendered here -->
                     </div>
                 </div>
-                <button type="button" id="save-timetable-btn" class="floating-save-btn" onclick="saveTimetable()">Save Timetable</button>
+                <button type="button" id="save-timetable-btn" class="floating-save-btn" onclick="saveTimetable()">Save
+                    Timetable</button>
             </div>
-            
+
             <!-- Attendance Section -->
             <div id="attendance-section" class="content-section" style="display: none;">
                 <div class="dashboard-header desktop-only">
@@ -126,11 +132,52 @@
                     <p>Coming soon...</p>
                 </div>
             </div>
+
+            <!-- Profile Section -->
+            <div id="profile-section" class="content-section" style="display: none;">
+                <div class="dashboard-header desktop-only">
+                    <h2>Your Profile</h2>
+                </div>
+                <div class="section-container">
+                    <h3>Profile Information</h3>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 8px;">Full Name</label>
+                        <input type="text" id="profile-name-input" placeholder="Your Name">
+                    </div>
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 8px;">User ID
+                            (Read-only)</label>
+                        <div class="user-id-container" onclick="copyUserId()">
+                            <span id="profile-id-display">Loading...</span>
+                            <button type="button" class="copy-btn-inner">Copy</button>
+                        </div>
+                    </div>
+                    <button type="button" id="save-profile-btn" class="floating-save-btn" onclick="saveProfile()">Save Profile</button>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div id="help-section" class="content-section" style="display: none;">
+                <div class="dashboard-header desktop-only">
+                    <h2>Help & Support</h2>
+                </div>
+                <div class="section-container">
+                    <h3>How to use Attendance Calc</h3>
+                    <p><strong>1. Setup Subjects:</strong> Go to 'Edit Subjects' to add the subjects you're tracking.
+                    </p>
+                    <p><strong>2. Build Timetable:</strong> Drag and drop your subjects into the weekly planner.</p>
+                    <p><strong>3. Track Attendance:</strong> (Coming Soon) Mark yourself present or absent daily.</p>
+                    <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+                    <h4>Need more help?</h4>
+                    <p>Contact us at: support@attendancecalc.com</p>
+                </div>
+            </div>
         </main>
     </div>
 
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+    <script src="custom-alert.js"></script>
     <script src="dashboard.js"></script>
     <script>
         const sidebar = document.getElementById('sidebar');
@@ -153,4 +200,5 @@
         if (overlay) overlay.addEventListener('click', closeSidebar);
     </script>
 </body>
+
 </html>

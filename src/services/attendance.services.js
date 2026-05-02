@@ -1,6 +1,7 @@
 import { db } from "../db/db.js"
 import { sql, eq, inArray } from "drizzle-orm";
 import { timetable } from "../db/schema.js";
+import { getUserById } from "./users.services.js";
  
 // Cache stores dashboard data: { subjects, overall, timetable }
 const cache = new Map();
@@ -11,8 +12,10 @@ export async function getDashboardData(userId) {
   const stats = await getSubjectStatsInternal(userId);
   const timetable = await getTimetableInternal(userId);
   const overall = getOverallPercentage(stats);
+  const userResults = await getUserById(userId);
+  const user = userResults && userResults.length > 0 ? userResults[0] : null;
 
-  const data = { subjects: stats, overall, timetable };
+  const data = { subjects: stats, overall, timetable, user };
   cache.set(userId, data);
   return data;
 }

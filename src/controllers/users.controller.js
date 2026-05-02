@@ -1,4 +1,5 @@
-import { getUserByName, createUserService, getUserByEmail, saveSubjectsService } from "../services/users.services.js";
+import { getUserByName, createUserService, getUserByEmail, saveSubjectsService, getUserById, updateUser } from "../services/users.services.js";
+import { clearUserCache } from "../services/attendance.services.js";
 
 
 export async function getUser(req, res){
@@ -106,5 +107,44 @@ export async function saveSubjects(req, res) {
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Failed to save subjects" });
+  }
+}
+
+export async function getUserProfile(req, res) {
+  try {
+    const { id } = req.params;
+    const users = await getUserById(id);
+    
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    res.json(users[0]);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to get user profile" });
+  }
+}
+
+export async function updateUserProfile(req, res) {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    
+    if (!name || name.trim() === "") {
+      return res.status(400).json({ message: "Name is required" });
+    }
+    
+    const updatedUsers = await updateUser(id, name);
+    
+    if (!updatedUsers || updatedUsers.length === 0) {
+      return res.status(500).json({ message: "Failed to update user profile" });
+    }
+    
+    clearUserCache(id);
+    res.json({ message: "Profile updated successfully", user: updatedUsers[0] });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to update user profile" });
   }
 }
