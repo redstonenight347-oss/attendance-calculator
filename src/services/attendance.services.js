@@ -1,6 +1,6 @@
 import { db } from "../db/db.js"
 import { sql, eq, inArray } from "drizzle-orm";
-import { timetable } from "../db/schema.js";
+import { timetable, attendanceLogs } from "../db/schema.js";
 import { getUserById } from "./users.services.js";
  
 // Cache stores dashboard data: { subjects, overall, timetable }
@@ -74,6 +74,7 @@ async function getSubjectStatsInternal(userId) {
 async function getTimetableInternal(userId) {
   const { rows } = await db.execute(sql`
     SELECT 
+      t.id as timetable_id,
       t.day_of_week,
       t.period_number,
       s.id as subject_id,
@@ -96,7 +97,11 @@ async function getTimetableInternal(userId) {
       timetable[day].push({ id: null, name: '' });
     }
     
-    timetable[day][idx] = { id: row.subject_id, name: row.subject_name };
+    timetable[day][idx] = { 
+      id: row.subject_id, 
+      name: row.subject_name,
+      timetableId: row.timetable_id 
+    };
   });
   
   return timetable;
@@ -167,5 +172,58 @@ export async function saveTimetableService(userId, timetableData) {
     }
   }
   
+  return true;
+}
+
+export async function getMonthlyLogs(userId, year, month) {
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+  const { rows } = await db.execute(sql`
+    SELECT 
+      al.id,
+      al.date,
+      al.status,
+      al.timetable_id,
+      s.name as subject_name
+    FROM attendance_logs al
+    JOIN timetable t ON t.id = al.timetable_id
+    JOIN subjects s ON s.id = t.subject_id
+    WHERE al.user_id = ${userId}
+    AND al.date >= ${startDate}
+    AND al.date <= ${endDate}
+    ORDER BY al.date ASC;
+  `);
+
+  return rows;
+}
+
+export async function saveAttendanceLogsService(userId, logs) {
+  clearUserCache(userId);
+  const uId = parseInt(userId);
+
+  for (const log of logs) {
+    const { timetable_id, date, status } = log;
+    
+    // Check if a log already exists for this slot and date
+    const existing = await db.select().from(attendanceLogs).where(
+      sql`${attendanceLogs.userId} = ${uId} AND 
+          ${attendanceLogs.timetableId} = ${timetable_id} AND 
+          ${attendanceLogs.date} = ${date}`
+    );
+
+    if (existing.length > 0) {
+      await db.update(attendanceLogs)
+        .set({ status })
+        .where(eq(attendanceLogs.id, existing[0].id));
+    } else {
+      await db.insert(attendanceLogs).values({
+        userId: uId,
+        timetableId: timetable_id,
+        date,
+        status
+      });
+    }
+  }
   return true;
 }

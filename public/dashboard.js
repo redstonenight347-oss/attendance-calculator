@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     getrequest(userId);
+    initCalendar();
 });
 
 async function getrequest(userID) {
@@ -600,7 +601,399 @@ function showToast(message) {
         toast.classList.remove('show');
     }, 2000);
 }
+// Calendar Logic
+let currentViewDate = new Date();
+let selectedDate = new Date();
+let attendanceLogsCache = [];
+let fetchLogsTimeout = null;
+let isFetchingLogs = false;
 
+function initCalendar() {
+    const prevBtn = document.getElementById('prevMonth');
+    const nextBtn = document.getElementById('nextMonth');
+    const prevDayBtn = document.getElementById('prevDay');
+    const nextDayBtn = document.getElementById('nextDay');
 
+    if (prevBtn) prevBtn.addEventListener('click', () => {
+        currentViewDate.setMonth(currentViewDate.getMonth() - 1);
+        renderCalendar();
+        debouncedFetchLogs();
+    });
 
+    if (nextBtn) nextBtn.addEventListener('click', () => {
+        currentViewDate.setMonth(currentViewDate.getMonth() + 1);
+        renderCalendar();
+        debouncedFetchLogs();
+    });
 
+    if (prevDayBtn) prevDayBtn.addEventListener('click', () => {
+        const oldMonth = selectedDate.getMonth();
+        const oldYear = selectedDate.getFullYear();
+        
+        selectedDate.setDate(selectedDate.getDate() - 1);
+        
+        const newMonth = selectedDate.getMonth();
+        const newYear = selectedDate.getFullYear();
+
+        if (oldMonth !== newMonth || oldYear !== newYear) {
+            currentViewDate = new Date(newYear, newMonth, 1);
+            renderCalendar();
+            debouncedFetchLogs();
+        } else {
+            renderDayAttendance();
+        }
+    });
+
+    if (nextDayBtn) nextDayBtn.addEventListener('click', () => {
+        const oldMonth = selectedDate.getMonth();
+        const oldYear = selectedDate.getFullYear();
+        
+        selectedDate.setDate(selectedDate.getDate() + 1);
+        
+        const newMonth = selectedDate.getMonth();
+        const newYear = selectedDate.getFullYear();
+
+        if (oldMonth !== newMonth || oldYear !== newYear) {
+            currentViewDate = new Date(newYear, newMonth, 1);
+            renderCalendar();
+            debouncedFetchLogs();
+        } else {
+            renderDayAttendance();
+        }
+    });
+
+    renderCalendar();
+    debouncedFetchLogs(); // Initial fetch
+    renderDayAttendance();
+}
+
+function debouncedFetchLogs() {
+    if (fetchLogsTimeout) clearTimeout(fetchLogsTimeout);
+    
+    fetchLogsTimeout = setTimeout(() => {
+        fetchMonthlyLogs();
+    }, 400); // 400ms debounce
+}
+
+async function fetchMonthlyLogs() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+    if (!userId) return;
+
+    const year = currentViewDate.getFullYear();
+    const month = currentViewDate.getMonth() + 1; // Backend expects 1-12
+
+    isFetchingLogs = true;
+    renderDayAttendance(); // Show loading state immediately
+
+    try {
+        const res = await fetch(`/${userId}/attendance/logs?year=${year}&month=${month}`);
+        if (!res.ok) throw new Error("Failed to fetch logs");
+        
+        attendanceLogsCache = await res.json();
+        console.log(`Fetched ${attendanceLogsCache.length} logs for ${year}-${month}`);
+    } catch (err) {
+        console.error("Error fetching logs:", err);
+    } finally {
+        isFetchingLogs = false;
+        renderCalendar(); // Update calendar colors
+        renderDayAttendance(); // Update day slots
+    }
+}
+
+function renderDayAttendance() {
+    const dateDisplay = document.getElementById('selectedDateDisplay');
+    const slotsWrapper = document.getElementById('daySlotsWrapper');
+    
+    if (!dateDisplay || !slotsWrapper) return;
+
+    // Format date display
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    dateDisplay.textContent = selectedDate.toLocaleDateString(undefined, options);
+
+    slotsWrapper.innerHTML = '';
+
+    const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const daySubjects = periodsData[dayName] || [];
+
+    if (daySubjects.length === 0) {
+        slotsWrapper.innerHTML = '<p style="color: #64748b; font-style: italic; padding: 20px;">No subjects scheduled for this day.</p>';
+        return;
+    }
+
+    const formatDate = (date) => {
+        const d = new Date(date);
+        const month = '' + (d.getMonth() + 1);
+        const day = '' + d.getDate();
+        const year = d.getFullYear();
+        return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
+    };
+
+    const selectedDateStr = formatDate(selectedDate);
+    
+    daySubjects.forEach((subject, index) => {
+        if (!subject.name) return;
+
+        const slot = document.createElement('div');
+        slot.className = 'attendance-slot';
+        
+        // Find if there's a log for this specific timetable slot and date
+        const log = attendanceLogsCache.find(l => {
+            const logDateStr = formatDate(l.date);
+            const match = logDateStr === selectedDateStr && Number(l.timetable_id) === Number(subject.timetableId);
+            return match;
+        });
+
+        let status = log ? log.status : 'pending';
+        if (isFetchingLogs) status = 'loading';
+
+        slot.innerHTML = `
+            <div class="slot-content">
+                <span class="slot-subject-name">${subject.name}</span>
+                <div class="slot-status-badge status-${status}">${status}</div>
+            </div>
+            <div class="slot-actions-overlay">
+                <button class="overlay-btn btn-present-mini" onclick="markAttendance('${subject.name}', 'present', event, ${subject.timetableId})">Present</button>
+                <button class="overlay-btn btn-absent-mini" onclick="markAttendance('${subject.name}', 'absent', event, ${subject.timetableId})">Absent</button>
+                <button class="overlay-btn btn-cancelled-mini" onclick="markAttendance('${subject.name}', 'cancelled', event, ${subject.timetableId})">Cancelled</button>
+                <button class="overlay-btn btn-clear-mini" onclick="markAttendance('${subject.name}', 'clear', event, ${subject.timetableId})">Clear</button>
+            </div>
+        `;
+        slot.addEventListener('click', (e) => {
+            const isShowing = slot.classList.contains('show-actions');
+            document.querySelectorAll('.attendance-slot').forEach(s => s.classList.remove('show-actions'));
+            if (!isShowing) {
+                slot.classList.add('show-actions');
+            }
+        });
+
+        slotsWrapper.appendChild(slot);
+    });
+}
+
+function markWholeDay(status) {
+    const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const daySubjects = periodsData[dayName] || [];
+
+    if (daySubjects.length === 0) {
+        showToast("No subjects to mark for this day");
+        return;
+    }
+
+    const getLocalDateStr = (date) => {
+        const d = new Date(date);
+        return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+    };
+
+    const selectedDateStr = getLocalDateStr(selectedDate);
+
+    daySubjects.forEach(subject => {
+        if (!subject.timetableId) return;
+        
+        const existingLogIndex = attendanceLogsCache.findIndex(l => {
+            return getLocalDateStr(l.date) === selectedDateStr && Number(l.timetable_id) === Number(subject.timetableId);
+        });
+
+        const finalStatus = (status === 'holiday') ? 'cancelled' : status;
+
+        if (existingLogIndex !== -1) {
+            attendanceLogsCache[existingLogIndex].status = finalStatus;
+        } else {
+            attendanceLogsCache.push({
+                timetable_id: subject.timetableId,
+                subject_name: subject.name,
+                status: finalStatus,
+                date: selectedDateStr
+            });
+        }
+    });
+
+    renderDayAttendance();
+    showToast(`Marked whole day as ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+}
+
+async function markAttendance(subjectName, status, event, timetableId) {
+    if (event) event.stopPropagation(); // Prevent toggling the overlay again
+    
+    // Find the slot element
+    const slot = event.target.closest('.attendance-slot');
+    const badge = slot.querySelector('.slot-status-badge');
+
+    // Optimistic UI Update
+    badge.className = `slot-status-badge status-${status}`;
+    badge.textContent = status;
+
+    const getLocalDateStr = (date) => {
+        const d = new Date(date);
+        return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+    };
+
+    // Update Local Cache
+    const selectedDateStr = getLocalDateStr(selectedDate);
+    
+    // Find existing log for this date and timetable slot
+    const existingLogIndex = attendanceLogsCache.findIndex(l => {
+        return getLocalDateStr(l.date) === selectedDateStr && Number(l.timetable_id) === Number(timetableId);
+    });
+
+    if (status === 'clear') {
+        if (existingLogIndex !== -1) {
+            attendanceLogsCache.splice(existingLogIndex, 1);
+        }
+        badge.className = `slot-status-badge status-pending`;
+        badge.textContent = 'pending';
+    } else {
+        if (existingLogIndex !== -1) {
+            attendanceLogsCache[existingLogIndex].status = status;
+        } else {
+            // Add new temporary log to cache
+            attendanceLogsCache.push({
+                timetable_id: timetableId,
+                subject_name: subjectName,
+                status: status,
+                date: selectedDateStr
+            });
+        }
+    }
+
+    // Close overlay
+    slot.classList.remove('show-actions');
+    
+    // Show toast for feedback
+    showToast(`${subjectName}: ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+}
+
+async function saveAttendance() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+    if (!userId) {
+        await customAlert("User ID not found!", "Error", "❌");
+        return;
+    }
+
+    const saveBtn = document.getElementById('save-attendance-btn');
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
+    try {
+        const res = await fetch(`/${userId}/attendance/logs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ logs: attendanceLogsCache })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            await customAlert("Attendance saved successfully!", "Success", "✅");
+            // Refresh dashboard data to update percentages
+            getrequest(userId);
+        } else {
+            await customAlert(data.message || "Failed to save attendance", "Error", "❌");
+        }
+    } catch (err) {
+        console.error("Save error:", err);
+        await customAlert("Error connecting to server", "Error", "❌");
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
+    }
+}
+
+function renderCalendar() {
+    const monthDisplay = document.getElementById('monthDisplay');
+    const calendarDays = document.getElementById('calendarDays');
+    
+    if (!monthDisplay || !calendarDays) return;
+
+    // Clear previous days
+    calendarDays.innerHTML = '';
+
+    const year = currentViewDate.getFullYear();
+    const month = currentViewDate.getMonth();
+
+    // Display Month and Year
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    monthDisplay.textContent = `${monthNames[month]} ${year}`;
+
+    // Get first day of month and total days in month
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Get today's date for highlighting
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+    // Add empty slots for days of previous month
+    for (let i = 0; i < firstDay; i++) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'calendar-day empty';
+        calendarDays.appendChild(emptyDiv);
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayDiv = document.createElement('div');
+        dayDiv.className = 'calendar-day';
+        dayDiv.textContent = day;
+
+        if (isCurrentMonth && day === today.getDate()) {
+            dayDiv.classList.add('today');
+        }
+
+        // Highlight if this is the selected date
+        if (selectedDate.getFullYear() === year && 
+            selectedDate.getMonth() === month && 
+            selectedDate.getDate() === day) {
+            dayDiv.classList.add('selected');
+        }
+
+        // Apply attendance status color
+        const dayDate = new Date(year, month, day);
+        const dayOfWeek = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
+        const scheduledSubjects = periodsData[dayOfWeek] || [];
+        
+        if (scheduledSubjects.length > 0) {
+            const dateStr = [year, String(month + 1).padStart(2, '0'), String(day).padStart(2, '0')].join('-');
+            const dayLogs = attendanceLogsCache.filter(l => {
+                const lDate = new Date(l.date);
+                const lStr = [lDate.getFullYear(), String(lDate.getMonth() + 1).padStart(2, '0'), String(lDate.getDate()).padStart(2, '0')].join('-');
+                return lStr === dateStr;
+            });
+
+            if (dayLogs.length > 0 && !isFetchingLogs) {
+                const statuses = dayLogs.map(l => l.status);
+                const hasAbsent = statuses.includes('absent');
+                const hasPresent = statuses.includes('present');
+                const hasCancelled = statuses.includes('cancelled');
+                const allCancelled = statuses.every(s => s === 'cancelled');
+
+                if (allCancelled) {
+                    dayDiv.classList.add('cal-cancelled');
+                } else if (hasAbsent) {
+                    dayDiv.classList.add('cal-absent');
+                } else if (hasPresent) {
+                    dayDiv.classList.add('cal-present');
+                    // Add marker if some classes were cancelled but overall day is green
+                    if (hasCancelled) {
+                        dayDiv.classList.add('has-cancelled-marker');
+                    }
+                }
+            } else if (isFetchingLogs) {
+                dayDiv.classList.add('cal-loading');
+            }
+        }
+
+        dayDiv.addEventListener('click', () => {
+            selectedDate = new Date(year, month, day);
+            renderCalendar(); // Re-render to update highlights
+            renderDayAttendance();
+            console.log(`Selected for slot machine: ${selectedDate.toDateString()}`);
+        });
+
+        calendarDays.appendChild(dayDiv);
+    }
+}
