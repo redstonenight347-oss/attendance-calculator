@@ -1272,8 +1272,13 @@ body.dashboard-page {
 }
 
 .btn-cancelled-mini { background: #64748b; color: white; }
+.btn-add-extra { background: #8b5cf6; color: white; }
 
 .status-holiday { background: #f1f5f9; color: #475569; }
+
+.extra-slot {
+    border-left: 4px solid #8b5cf6 !important;
+}
 
 @media (max-width: 480px) {
     .bulk-btn {

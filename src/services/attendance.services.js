@@ -36,8 +36,12 @@ async function getSubjectStatsInternal(userId) {
         NULLIF(COUNT(al.id) FILTER (WHERE al.status <> 'cancelled'), 0), 2
         ), 0) AS attendance_percentage
     FROM subjects s
-    LEFT JOIN timetable t ON t.subject_id = s.id AND t.user_id = ${userId}
-    LEFT JOIN attendance_logs al ON al.timetable_id = t.id AND al.user_id = ${userId}
+    LEFT JOIN (
+      SELECT al.id, al.status, COALESCE(al.subject_id, t.subject_id) as derived_subject_id
+      FROM attendance_logs al
+      LEFT JOIN timetable t ON t.id = al.timetable_id
+      WHERE al.user_id = ${userId}
+    ) al ON al.derived_subject_id = s.id
     WHERE s.user_id = ${userId}
     GROUP BY s.id, s.name
     ORDER BY s.name;
@@ -185,10 +189,12 @@ export async function getMonthlyLogs(userId, year, month) {
       al.date,
       al.status,
       al.timetable_id,
-      s.name as subject_name
+      al.subject_id,
+      COALESCE(s.name, s2.name) as subject_name
     FROM attendance_logs al
-    JOIN timetable t ON t.id = al.timetable_id
-    JOIN subjects s ON s.id = t.subject_id
+    LEFT JOIN timetable t ON t.id = al.timetable_id
+    LEFT JOIN subjects s ON s.id = t.subject_id
+    LEFT JOIN subjects s2 ON s2.id = al.subject_id
     WHERE al.user_id = ${userId}
     AND al.date >= ${startDate}
     AND al.date <= ${endDate}
@@ -203,23 +209,38 @@ export async function saveAttendanceLogsService(userId, logs) {
   const uId = parseInt(userId);
 
   for (const log of logs) {
-    const { timetable_id, date, status } = log;
+    const { timetable_id, subject_id, date, status } = log;
     
-    // Check if a log already exists for this slot and date
-    const existing = await db.select().from(attendanceLogs).where(
-      sql`${attendanceLogs.userId} = ${uId} AND 
-          ${attendanceLogs.timetableId} = ${timetable_id} AND 
-          ${attendanceLogs.date} = ${date}`
-    );
+    // Check if a log already exists
+    // If it's a timetable slot, we check by timetable_id and date
+    // If it's an extra class, we check by subject_id, date and the fact that timetable_id is null
+    let existing;
+    if (timetable_id) {
+      existing = await db.select().from(attendanceLogs).where(
+        sql`${attendanceLogs.userId} = ${uId} AND 
+            ${attendanceLogs.timetableId} = ${timetable_id} AND 
+            ${attendanceLogs.date} = ${date}`
+      );
+    } else {
+      // For extra classes, we might have multiple on the same day? 
+      // For now, let's assume one extra class per subject per day if no timetable_id
+      existing = await db.select().from(attendanceLogs).where(
+        sql`${attendanceLogs.userId} = ${uId} AND 
+            ${attendanceLogs.subjectId} = ${subject_id} AND 
+            ${attendanceLogs.timetableId} IS NULL AND 
+            ${attendanceLogs.date} = ${date}`
+      );
+    }
 
-    if (existing.length > 0) {
+    if (existing && existing.length > 0) {
       await db.update(attendanceLogs)
         .set({ status })
         .where(eq(attendanceLogs.id, existing[0].id));
     } else {
       await db.insert(attendanceLogs).values({
         userId: uId,
-        timetableId: timetable_id,
+        timetableId: timetable_id || null,
+        subjectId: subject_id,
         date,
         status
       });

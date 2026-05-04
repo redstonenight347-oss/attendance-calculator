@@ -722,6 +722,10 @@ function renderDayAttendance() {
     }
 
     const formatDate = (date) => {
+        // If it's already a string in YYYY-MM-DD format, return it
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+            return date.substring(0, 10);
+        }
         const d = new Date(date);
         const month = '' + (d.getMonth() + 1);
         const day = '' + d.getDate();
@@ -731,6 +735,7 @@ function renderDayAttendance() {
 
     const selectedDateStr = formatDate(selectedDate);
     
+    // Render regular subjects from timetable
     daySubjects.forEach((subject, index) => {
         if (!subject.name) return;
 
@@ -753,10 +758,10 @@ function renderDayAttendance() {
                 <div class="slot-status-badge status-${status}">${status}</div>
             </div>
             <div class="slot-actions-overlay">
-                <button class="overlay-btn btn-present-mini" onclick="markAttendance('${subject.name}', 'present', event, ${subject.timetableId})">Present</button>
-                <button class="overlay-btn btn-absent-mini" onclick="markAttendance('${subject.name}', 'absent', event, ${subject.timetableId})">Absent</button>
-                <button class="overlay-btn btn-cancelled-mini" onclick="markAttendance('${subject.name}', 'cancelled', event, ${subject.timetableId})">Cancelled</button>
-                <button class="overlay-btn btn-clear-mini" onclick="markAttendance('${subject.name}', 'clear', event, ${subject.timetableId})">Clear</button>
+                <button class="overlay-btn btn-present-mini" onclick="markAttendance('${subject.name}', 'present', event, ${subject.timetableId}, ${subject.id})">Present</button>
+                <button class="overlay-btn btn-absent-mini" onclick="markAttendance('${subject.name}', 'absent', event, ${subject.timetableId}, ${subject.id})">Absent</button>
+                <button class="overlay-btn btn-cancelled-mini" onclick="markAttendance('${subject.name}', 'cancelled', event, ${subject.timetableId}, ${subject.id})">Cancelled</button>
+                <button class="overlay-btn btn-clear-mini" onclick="markAttendance('${subject.name}', 'clear', event, ${subject.timetableId}, ${subject.id})">Clear</button>
             </div>
         `;
         slot.addEventListener('click', (e) => {
@@ -769,6 +774,49 @@ function renderDayAttendance() {
 
         slotsWrapper.appendChild(slot);
     });
+
+    // Render extra classes (logs with no timetableId)
+    const extraLogs = attendanceLogsCache.filter(l => {
+        const logDateStr = formatDate(l.date);
+        return logDateStr === selectedDateStr && !l.timetable_id;
+    });
+
+    if (extraLogs.length > 0) {
+        const extraHeader = document.createElement('h4');
+        extraHeader.textContent = "Extra Classes";
+        extraHeader.style.marginTop = "20px";
+        extraHeader.style.marginBottom = "10px";
+        slotsWrapper.appendChild(extraHeader);
+
+        extraLogs.forEach(log => {
+            const slot = document.createElement('div');
+            slot.className = 'attendance-slot extra-slot';
+            
+            slot.innerHTML = `
+                <div class="slot-content">
+                    <div style="display:flex; flex-direction:column;">
+                        <span class="slot-subject-name">${log.subject_name}</span>
+                        <small style="color: #64748b; font-size: 0.7rem;">Extra Class</small>
+                    </div>
+                    <div class="slot-status-badge status-${log.status}">${log.status}</div>
+                </div>
+                <div class="slot-actions-overlay">
+                    <button class="overlay-btn btn-present-mini" onclick="markAttendance('${log.subject_name}', 'present', event, null, ${log.subject_id})">Present</button>
+                    <button class="overlay-btn btn-absent-mini" onclick="markAttendance('${log.subject_name}', 'absent', event, null, ${log.subject_id})">Absent</button>
+                    <button class="overlay-btn btn-cancelled-mini" onclick="markAttendance('${log.subject_name}', 'cancelled', event, null, ${log.subject_id})">Cancelled</button>
+                    <button class="overlay-btn btn-clear-mini" onclick="markAttendance('${log.subject_name}', 'clear', event, null, ${log.subject_id})">Remove</button>
+                </div>
+            `;
+            slot.addEventListener('click', (e) => {
+                const isShowing = slot.classList.contains('show-actions');
+                document.querySelectorAll('.attendance-slot').forEach(s => s.classList.remove('show-actions'));
+                if (!isShowing) {
+                    slot.classList.add('show-actions');
+                }
+            });
+            slotsWrapper.appendChild(slot);
+        });
+    }
 }
 
 function markWholeDay(status) {
@@ -798,9 +846,11 @@ function markWholeDay(status) {
 
         if (existingLogIndex !== -1) {
             attendanceLogsCache[existingLogIndex].status = finalStatus;
+            attendanceLogsCache[existingLogIndex].subject_id = subject.id; // Ensure subject_id is set
         } else {
             attendanceLogsCache.push({
                 timetable_id: subject.timetableId,
+                subject_id: subject.id,
                 subject_name: subject.name,
                 status: finalStatus,
                 date: selectedDateStr
@@ -812,18 +862,25 @@ function markWholeDay(status) {
     showToast(`Marked whole day as ${status.charAt(0).toUpperCase() + status.slice(1)}`);
 }
 
-async function markAttendance(subjectName, status, event, timetableId) {
+async function markAttendance(subjectName, status, event, timetableId, subjectId) {
     if (event) event.stopPropagation(); // Prevent toggling the overlay again
     
     // Find the slot element
-    const slot = event.target.closest('.attendance-slot');
-    const badge = slot.querySelector('.slot-status-badge');
+    const slot = event ? event.target.closest('.attendance-slot') : null;
+    const badge = slot ? slot.querySelector('.slot-status-badge') : null;
 
-    // Optimistic UI Update
-    badge.className = `slot-status-badge status-${status}`;
-    badge.textContent = status;
+    // Optimistic UI Update (if it's not a 'clear' action for an extra class)
+    if (!(status === 'clear' && !timetableId)) {
+        if (badge) {
+            badge.className = `slot-status-badge status-${status}`;
+            badge.textContent = status;
+        }
+    }
 
     const getLocalDateStr = (date) => {
+        if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+            return date.substring(0, 10);
+        }
         const d = new Date(date);
         return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
     };
@@ -831,24 +888,36 @@ async function markAttendance(subjectName, status, event, timetableId) {
     // Update Local Cache
     const selectedDateStr = getLocalDateStr(selectedDate);
     
-    // Find existing log for this date and timetable slot
+    // Find existing log
     const existingLogIndex = attendanceLogsCache.findIndex(l => {
-        return getLocalDateStr(l.date) === selectedDateStr && Number(l.timetable_id) === Number(timetableId);
+        if (timetableId) {
+            return getLocalDateStr(l.date) === selectedDateStr && Number(l.timetable_id) === Number(timetableId);
+        } else {
+            return getLocalDateStr(l.date) === selectedDateStr && Number(l.subject_id) === Number(subjectId) && !l.timetable_id;
+        }
     });
 
     if (status === 'clear') {
         if (existingLogIndex !== -1) {
             attendanceLogsCache.splice(existingLogIndex, 1);
         }
-        badge.className = `slot-status-badge status-pending`;
-        badge.textContent = 'pending';
+        if (badge) {
+            badge.className = `slot-status-badge status-pending`;
+            badge.textContent = 'pending';
+        }
+        if (!timetableId) {
+            // If it's an extra class being removed, re-render
+            renderDayAttendance();
+        }
     } else {
         if (existingLogIndex !== -1) {
             attendanceLogsCache[existingLogIndex].status = status;
+            attendanceLogsCache[existingLogIndex].subject_id = subjectId;
         } else {
             // Add new temporary log to cache
             attendanceLogsCache.push({
-                timetable_id: timetableId,
+                timetable_id: timetableId ? Number(timetableId) : null,
+                subject_id: Number(subjectId),
                 subject_name: subjectName,
                 status: status,
                 date: selectedDateStr
@@ -856,11 +925,66 @@ async function markAttendance(subjectName, status, event, timetableId) {
         }
     }
 
-    // Close overlay
-    slot.classList.remove('show-actions');
+    // Close overlay if still present
+    if (slot) slot.classList.remove('show-actions');
     
     // Show toast for feedback
     showToast(`${subjectName}: ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+}
+
+function showAddExtraClassModal() {
+    if (!window.cachedSubjects || window.cachedSubjects.length === 0) {
+        customAlert("No subjects found. Please add subjects first in 'Edit Subjects' section.", "No Subjects", "⚠️");
+        return;
+    }
+
+    const modalHtml = `
+        <div style="text-align: left; margin-bottom: 20px;">
+            <label style="display:block; margin-bottom: 8px; font-weight: bold;">Select Subject</label>
+            <select id="extra-subject-select" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                ${window.cachedSubjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+            </select>
+        </div>
+    `;
+
+    // We can't easily use customAlert for inputs without modification, 
+    // so let's use a simple approach for now or modify custom-alert.js if possible.
+    // For now, let's use a simple prompt-like modal if we can't use customConfirm.
+    
+    // Actually, let's just use a prompt for simplicity if I can't easily add HTML to customConfirm.
+    // Wait, I can just create a temporary modal here.
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop active';
+    backdrop.innerHTML = `
+        <div class="custom-modal">
+            <span class="modal-icon">➕</span>
+            <h3 class="modal-title">Add Extra Class</h3>
+            <p class="modal-message">Select a subject to add as an extra class for this day.</p>
+            ${modalHtml}
+            <div class="modal-buttons">
+                <button class="modal-btn" style="background: #f0f0f0; color: #333;" id="cancel-extra-btn">Cancel</button>
+                <button class="modal-btn" style="background: #8b5cf6; color: white;" id="confirm-extra-btn">Add Class</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    document.getElementById('cancel-extra-btn').onclick = () => {
+        document.body.removeChild(backdrop);
+    };
+
+    document.getElementById('confirm-extra-btn').onclick = () => {
+        const select = document.getElementById('extra-subject-select');
+        const subjectId = select.value;
+        const subjectName = select.options[select.selectedIndex].text;
+        
+        markAttendance(subjectName, 'present', null, null, Number(subjectId));
+        document.body.removeChild(backdrop);
+        renderDayAttendance();
+        
+        showToast("Extra class added! Don't forget to click 'Save Attendance'.");
+    };
 }
 
 async function saveAttendance() {

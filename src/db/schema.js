@@ -64,19 +64,16 @@ export const attendanceLogs = pgTable("attendance_logs",
   {
     id: serial("id").primaryKey(),
     userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    timetableId: integer("timetable_id").notNull().references(() => timetable.id, { onDelete: "cascade" }),
+    timetableId: integer("timetable_id").references(() => timetable.id, { onDelete: "cascade" }), // Nullable for extra classes
+    subjectId: integer("subject_id").references(() => subjects.id, { onDelete: "cascade" }), // Explicit subject reference
     date: date("date").notNull(),
     status: attendanceStatusEnum("status").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
-    uniqueAttendancePerDay: uniqueIndex("unique_attendance_per_day").on(
-      table.userId,
-      table.timetableId,
-      table.date
-    ),
     userIdx: index("idx_attendance_user").on(table.userId),
     timetableIdx: index("idx_attendance_timetable").on(table.timetableId),
+    subjectIdx: index("idx_attendance_subject").on(table.subjectId),
     statusIdx: index("idx_attendance_status").on(table.status),
   })
 );
