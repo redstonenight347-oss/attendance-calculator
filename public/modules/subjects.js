@@ -1,5 +1,5 @@
 import { saveSubjectsApi } from './api.js';
-import { getUserIdFromUrl } from './utils.js';
+import { getUserId } from './utils.js';
 import { Storage } from './storage.js';
 import { debounceSync } from './sync.js';
 
@@ -84,7 +84,7 @@ function triggerAutoSave() {
         }
     });
 
-    const userId = getUserIdFromUrl();
+    const userId = getUserId();
     
     // DELTA CHECK: Only proceed if data has actually changed from what's in cache/memory
     const lastSaved = Storage.get(userId, 'subjects_last_saved');

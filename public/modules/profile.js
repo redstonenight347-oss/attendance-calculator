@@ -1,9 +1,9 @@
 import { updateProfileApi } from './api.js';
-import { getUserIdFromUrl, showToast } from './utils.js';
+import { getUserId, showToast } from './utils.js';
 import { Storage } from './storage.js';
 
 export async function saveProfile() {
-    const userId = getUserIdFromUrl();
+    const userId = getUserId();
     const nameInput = document.getElementById('profile-name-input');
     
     if (!nameInput || !userId) {

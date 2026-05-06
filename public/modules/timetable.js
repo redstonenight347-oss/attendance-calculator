@@ -1,5 +1,5 @@
 import { saveTimetableApi } from './api.js';
-import { getUserIdFromUrl } from './utils.js';
+import { getUserId } from './utils.js';
 import { Storage } from './storage.js';
 import { debounceSync } from './sync.js';
 
@@ -176,7 +176,7 @@ function handlePeriodDrop(e) {
 }
 
 function triggerAutoSave() {
-    const userId = getUserIdFromUrl();
+    const userId = getUserId();
     
     // DELTA CHECK
     const lastSaved = Storage.get(userId, 'timetable_last_saved');

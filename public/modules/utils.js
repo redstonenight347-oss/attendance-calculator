@@ -27,7 +27,9 @@ export function formatDate(date) {
     return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
 }
 
-export function getUserIdFromUrl() {
+export function getUserId() {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('userId');
+    const userId = urlParams.get('userId');
+    if (userId) return userId;
+    return localStorage.getItem('userId');
 }

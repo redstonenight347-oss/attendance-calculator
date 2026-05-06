@@ -1,5 +1,5 @@
 import { fetchDashboardData } from './modules/api.js';
-import { getUserIdFromUrl } from './modules/utils.js';
+import { getUserId } from './modules/utils.js';
 import { Storage } from './modules/storage.js';
 import { isSyncing } from './modules/sync.js';
 import { 
@@ -23,6 +23,8 @@ import {
     saveExtraClass
 } from './modules/calendar.js';
 import { saveProfile, copyUserId } from './modules/profile.js';
+import { verifyTokenApi } from './modules/api.js';
+
 
 // Expose functions to global scope immediately for HTML onclicks
 window.showSection = (sectionId, navLink) => {
@@ -55,6 +57,13 @@ window.showAddExtraClassModal = openExtraClassModal;
 window.closeExtraClassModal = closeExtraClassModal;
 window.saveExtraClass = saveExtraClass;
 
+window.logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userId');
+    window.location.href = '/';
+};
+
+
 async function initialize(userId) {
     // Initialize global refresh function
     window.refreshDashboard = (data = null, skipSections = []) => {
@@ -76,18 +85,25 @@ async function initialize(userId) {
     loadDashboardData(userId, !cachedData);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const userId = getUserIdFromUrl();
+document.addEventListener("DOMContentLoaded", async () => {
+    const userId = getUserId();
+    const token = localStorage.getItem('token');
 
-    if (!userId || isNaN(userId)) {
-        const output = document.getElementById("output2");
-        if (output) {
-            output.innerHTML = `<p class="error-text">No User ID provided. Please <a href="/">log in</a>.</p>`;
-        }
+    if (!userId || !token) {
+        window.location.href = '/';
         return;
     }
 
-    initialize(userId);
+    // Verify token and potentially refresh user info
+    try {
+        await verifyTokenApi();
+        initialize(userId);
+    } catch (err) {
+        console.error("Session verification failed:", err);
+        localStorage.removeItem('token');
+        localStorage.removeItem('userId');
+        window.location.href = '/';
+    }
 });
 
 async function loadDashboardData(userId, showLoading = false) {

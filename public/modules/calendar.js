@@ -1,5 +1,5 @@
 import { fetchMonthlyLogsApi, saveAttendanceLogApi } from './api.js';
-import { getUserIdFromUrl, formatDate } from './utils.js';
+import { getUserId, formatDate } from './utils.js';
 import { getPeriodsData } from './timetable.js';
 import { Storage } from './storage.js';
 import { debounceSync } from './sync.js';
@@ -56,7 +56,7 @@ export function initCalendar() {
         nextDayBtn.dataset.listener = 'true';
     }
 
-    const userId = getUserIdFromUrl();
+    const userId = getUserId();
     const year = currentViewDate.getFullYear();
     const month = currentViewDate.getMonth() + 1;
     const cachedLogs = Storage.get(userId, `logs_${year}_${month}`);
@@ -74,7 +74,7 @@ function handleDateChange(oldMonth, oldYear) {
     const newYear = selectedDate.getFullYear();
     if (oldMonth !== newMonth || oldYear !== newYear) {
         currentViewDate = new Date(newYear, newMonth, 1);
-        const userId = getUserIdFromUrl();
+        const userId = getUserId();
         const cachedLogs = Storage.get(userId, `logs_${newYear}_${newMonth + 1}`);
         if (cachedLogs) attendanceLogsCache = cachedLogs;
         renderCalendar();
@@ -90,7 +90,8 @@ export function debouncedFetchLogs() {
 }
 
 async function fetchMonthlyLogs() {
-    const userId = getUserIdFromUrl();
+    const userId = getUserId();
+
     if (!userId) return;
     const year = currentViewDate.getFullYear();
     const month = currentViewDate.getMonth() + 1;
@@ -139,8 +140,13 @@ export function renderCalendar() {
         const dayLogs = attendanceLogsCache.filter(l => formatDate(l.date) === dateStr);
         if (dayLogs.length > 0) {
             const hasAbsent = dayLogs.some(l => l.status === 'absent');
-            const allPresent = dayLogs.every(l => l.status === 'present' || l.status === 'cancelled');
-            if (hasAbsent) dayDiv.classList.add('cal-absent');
+            const hasPresent = dayLogs.some(l => l.status === 'present');
+            const allAbsent = dayLogs.every(l => l.status === 'absent' || l.status === 'cancelled') && hasAbsent;
+            const allPresent = dayLogs.every(l => l.status === 'present' || l.status === 'cancelled') && hasPresent;
+            const isMixed = hasAbsent && hasPresent;
+
+            if (isMixed) dayDiv.classList.add('cal-mixed');
+            else if (allAbsent) dayDiv.classList.add('cal-absent');
             else if (allPresent) dayDiv.classList.add('cal-present');
         }
         
@@ -233,7 +239,7 @@ function renderExtraClasses(selectedDateStr, slotsWrapper) {
 
 export async function markAttendance(subjectName, status, event, timetableId, subjectId) {
     if (event) event.stopPropagation();
-    const userId = getUserIdFromUrl();
+    const userId = getUserId();
     const dateStr = formatDate(selectedDate);
     
     // 1. Find old status for calculations
@@ -284,7 +290,7 @@ export async function markAttendance(subjectName, status, event, timetableId, su
 }
 
 export async function markWholeDay(status) {
-    const userId = getUserIdFromUrl();
+    const userId = getUserId();
     const dateStr = formatDate(selectedDate);
     const daySubjects = getPeriodsData()[selectedDate.toLocaleDateString('en-US', { weekday: 'long' })] || [];
     const newLogs = daySubjects.filter(s => s.name).map(s => ({ date: dateStr, subjectId: s.id, timetableId: s.timetableId, status: status === 'holiday' ? 'cancelled' : status }));

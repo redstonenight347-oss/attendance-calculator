@@ -1156,6 +1156,7 @@ body.dashboard-page {
     margin-bottom: 8px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.2;
@@ -1297,17 +1298,18 @@ body.dashboard-page {
     color: #991b1b !important;
 }
 
+.calendar-day.cal-mixed {
+    background-color: #f3e8ff !important;
+    color: #6b21a8 !important;
+}
+
 .calendar-day.cal-cancelled {
     background-color: #f1f5f9 !important;
     color: #475569 !important;
 }
 
-.calendar-day.cal-bunk {
-    background-color: #fef9c3 !important;
-    color: #854d0e !important; /* Gold Yellow */
-}
-
 .calendar-day.cal-loading {
+
     background-color: #f0f9ff !important;
     animation: pulse 1.5s infinite;
 }

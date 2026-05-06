@@ -73,3 +73,10 @@ export async function updateUser(id, name) {
     .where(eq(users.id, parseInt(id)))
     .returning();
 }
+
+export async function updateUserPasswordService(id, hashedPassword) {
+  return await db
+    .update(users)
+    .set({ password: hashedPassword })
+    .where(eq(users.id, parseInt(id)));
+}

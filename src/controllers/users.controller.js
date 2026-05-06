@@ -1,5 +1,7 @@
-import { getUserByName, createUserService, getUserByEmail, saveSubjectsService, getUserById, updateUser } from "../services/users.services.js";
+import { getUserByName, createUserService, getUserByEmail, saveSubjectsService, getUserById, updateUser, updateUserPasswordService } from "../services/users.services.js";
 import { clearUserCache } from "../services/attendance.services.js";
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 
 export async function getUser(req, res){
@@ -53,9 +55,22 @@ export async function signup(req, res) {
       return res.status(400).json({ message: "User with this email already exists" });
     }
 
-    const userId = await createUserService(name, email, password);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    res.json({ message: "User signed up successfully", userId: userId.id });
+    const newUser = await createUserService(name, email, hashedPassword);
+
+    const token = jwt.sign(
+      { id: newUser.id, name: newUser.name },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({ 
+      message: "User signed up successfully", 
+      userId: newUser.id,
+      token: token
+    });
   }
   catch (err) {
     console.log(err);
@@ -80,16 +95,56 @@ export async function signin(req, res) {
     }
 
     const user = users[0];
-    if (user.password !== password) {
+    let isMatch = false;
+
+    // Try bcrypt comparison first
+    try {
+      isMatch = await bcrypt.compare(password, user.password);
+    } catch (e) {
+      // If comparison fails due to invalid hash format, it might be plaintext
+      isMatch = false;
+    }
+
+    // Fallback for existing plaintext passwords
+    if (!isMatch && password === user.password) {
+      isMatch = true;
+      // Auto-migrate to hashed password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+      await updateUserPasswordService(user.id, hashedPassword);
+      console.log(`Migrated user ${user.email} to hashed password`);
+    }
+    
+    if (!isMatch) {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    res.json({ message: "Signed in successfully", userId: user.id, name: user.name });
+    const token = jwt.sign(
+      { id: user.id, name: user.name },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.json({ 
+      message: "Signed in successfully", 
+      userId: user.id, 
+      name: user.name,
+      token: token
+    });
   }
   catch (err) {
     console.log(err);
     res.status(500).json({ message: "Sign in failed" });
   }
+}
+
+
+export async function verifyToken(req, res) {
+  // req.user is populated by authMiddleware
+  res.json({ 
+    valid: true, 
+    user: req.user 
+  });
 }
 
 export async function saveSubjects(req, res) {

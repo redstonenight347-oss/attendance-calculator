@@ -32,9 +32,13 @@ async function signinRequest() {
         if (!post.ok) {
             output.innerHTML = `<p class="error-text">${response.message}</p>`;
         } else {
+            // Save token and userId for session management
+            localStorage.setItem("token", response.token);
+            localStorage.setItem("userId", response.userId);
+
             output.innerHTML = `<p>${response.message} Redirecting...</p>`;
             setTimeout(() => {
-                window.location.href = `/dashboard.html?userId=${response.userId}`;
+                window.location.href = `/dashboard.html`;
             }, 1000);
         }
         console.log(response);
@@ -84,9 +88,13 @@ async function signupRequest() {
         if (!post.ok) {
             output.innerHTML = `<p class="error-text">${response.message}</p>`;
         } else {
+            // Save token and userId for session management
+            localStorage.setItem("token", response.token);
+            localStorage.setItem("userId", response.userId);
+
             output.innerHTML = `<p>${response.message} Redirecting...</p>`;
             setTimeout(() => {
-                window.location.href = `/dashboard.html?userId=${response.userId}`;
+                window.location.href = `/dashboard.html`;
             }, 1000);
         }
         console.log(response);
@@ -99,3 +107,15 @@ async function signupRequest() {
         btn.innerText = originalText;
     }
 }
+
+// Check for existing session on load
+document.addEventListener("DOMContentLoaded", () => {
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("userId");
+    
+    if (token && userId) {
+        // Optionally verify token with backend here
+        // For better UX, we just redirect and let the dashboard verify
+        window.location.href = "/dashboard.html";
+    }
+});
