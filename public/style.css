@@ -990,7 +990,7 @@ body.dashboard-page {
     transition: all 0.2s ease;
     background: #f8fafc;
     border: 1px solid #f1f5f9;
-    animation: fadeInDay 0.3s ease-out forwards;
+    /* animation: fadeInDay 0.3s ease-out forwards; */
 }
 
 @keyframes fadeInDay {

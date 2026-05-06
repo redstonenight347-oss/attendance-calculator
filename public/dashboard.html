@@ -5,10 +5,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance Dashboard</title>
+    <style>
+        .sync-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            background: #ffffff;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            z-index: 2000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .sync-indicator::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+        }
+        .sync-indicator.synced {
+            color: #10b981;
+            background: #ecfdf5;
+            border-color: #d1fae5;
+        }
+        .sync-indicator.synced::before {
+            background: #10b981;
+        }
+        .sync-indicator.error {
+            color: #ef4444;
+            background: #fef2f2;
+            border-color: #fee2e2;
+        }
+        .sync-indicator.error::before {
+            background: #ef4444;
+        }
+    </style>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="dashboard-page">
+    <div id="sync-indicator" class="sync-indicator synced">Synced</div>
+
     <div class="app-layout">
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -72,7 +118,6 @@
                     </div>
                     <div id="timetable-output" class="error-text" style="margin-top: 10px;"></div>
                 </div>
-                <button type="button" class="floating-save-btn" onclick="saveSubjects()">Save Subjects</button>
             </div>
 
             <!-- Timetable Section -->
@@ -119,8 +164,6 @@
                         <!-- Overview summary will be rendered here -->
                     </div>
                 </div>
-                <button type="button" id="save-timetable-btn" class="floating-save-btn" onclick="saveTimetable()">Save
-                    Timetable</button>
             </div>
 
             <!-- Attendance Section -->
@@ -167,7 +210,6 @@
                         </div>
                     </div>
                 </div>
-                <button type="button" id="save-attendance-btn" class="floating-save-btn" onclick="saveAttendance()">Save Attendance</button>
             </div>
 
             <!-- Profile Section -->
@@ -215,7 +257,29 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <script src="custom-alert.js"></script>
-    <script src="dashboard.js"></script>
+    <script type="module" src="dashboard.js"></script>
+
+    <!-- Extra Class Modal -->
+    <div id="extraClassModal" class="modal-backdrop" style="display:none;">
+        <div class="custom-modal">
+            <span class="modal-icon">➕</span>
+            <h3 class="modal-title">Add Extra Class</h3>
+            <div style="margin: 20px 0; text-align: left;">
+                <label style="display:block; margin-bottom:5px;">Subject</label>
+                <select id="extra-subject-select" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ddd;"></select>
+                
+                <label style="display:block; margin-top:15px; margin-bottom:5px;">Status</label>
+                <select id="extra-status-select" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ddd;">
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeExtraClassModal()" class="modal-btn modal-btn-secondary">Cancel</button>
+                <button onclick="saveExtraClass()" class="modal-btn modal-btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
     <script>
         const sidebar = document.getElementById('sidebar');
         const openBtn = document.getElementById('openSidebarBtn');
