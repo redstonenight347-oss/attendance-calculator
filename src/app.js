@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({quiet: true});
+dotenv.config({ quiet: true });
 
 // Environment Startup Validation
 const REQUIRED_ENV = ["DATABASE_URL", "JWT_SECRET", "EMAIL_USER", "EMAIL_PASS"];
@@ -65,7 +65,7 @@ app.get("/health", (req, res) => {
 // Rate Limiters
 const generalLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 150, 
+  max: 150,
   message: { message: "Too many requests. Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -73,15 +73,15 @@ const generalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 15, 
+  max: 15,
   message: { message: "Too many sign-in attempts. Please try again in 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const signupLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, 
-  max: 5, 
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: { message: "Too many accounts created from this IP. Please try again in 15 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -89,7 +89,7 @@ const signupLimiter = rateLimit({
 
 const otpLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 5, 
+  max: 5,
   message: { message: "Too many OTP requests. Please try again in 10 minutes." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -107,7 +107,7 @@ app.use("/users", generalLimiter);
 app.use("/attendance", generalLimiter);
 
 app.use("/users", userRoutes);
-app.use("/attendance", attendanceRoutes); 
+app.use("/attendance", attendanceRoutes);
 
 // Centralized error handling middleware
 app.use(errorHandler);

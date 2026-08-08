@@ -60,21 +60,21 @@ export function addSubjectInput(value = '', id = '') {
             </svg>
         </button>
     `;
-    
+
     div.querySelector('.delete-subject-btn').addEventListener('click', async () => {
         const inputId = div.querySelector('.subject-name-input').getAttribute('data-id');
-        
+
         // If it's already saved in the DB, warn the user about cascading deletes
         if (inputId && !inputId.toString().startsWith('temp_')) {
             const subjectName = div.querySelector('.subject-name-input').value.trim() || 'this subject';
             const message = `Warning: Deleting "${subjectName}" will also permanently delete all its associated attendance logs and timetable periods from the database. Are you sure?`;
-            
+
             const confirmed = await window.customConfirm(message, "Delete Subject", "warning");
             if (!confirmed) {
                 return; // Revert/Abort deletion
             }
         }
-        
+
         div.remove();
         updateSubjectLabels();
         onSubjectChange();
@@ -83,7 +83,7 @@ export function addSubjectInput(value = '', id = '') {
     div.querySelector('.subject-name-input').addEventListener('input', () => {
         onSubjectChange();
     });
-    
+
     list.appendChild(div);
 }
 

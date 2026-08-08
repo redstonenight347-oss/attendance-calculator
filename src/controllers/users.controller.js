@@ -15,13 +15,13 @@ export async function getUser(req, res, next) {
     const user = await getUserByName(name);
 
     if (!user || user.length === 0) {
-      return res.status(500).json({ message: "failed to get user details" });   
+      return res.status(500).json({ message: "failed to get user details" });
     }
-    
+
     const safeUser = { ...user[0] };
     delete safeUser.password;
 
-    res.json(safeUser);  
+    res.json(safeUser);
   } catch (err) {
     next(err);
   }
@@ -40,11 +40,11 @@ export async function requestSignupOTP(req, res, next) {
     }
     if (!email || email.trim() === "") {
       logger.warn("Signup OTP failed: Email is required", { name });
-      return res.status(400).json({ message: "*email required" }); 
+      return res.status(400).json({ message: "*email required" });
     }
     if (!password || password.trim() === "") {
       logger.warn("Signup OTP failed: Password is required", { name, email });
-      return res.status(400).json({ message: "*password required" }); 
+      return res.status(400).json({ message: "*password required" });
     }
 
     // Name Validation
@@ -156,8 +156,8 @@ export async function signup(req, res, next) {
 
     logger.info("User signup succeeded", { userId: newUser.id, email });
 
-    res.json({ 
-      message: "User signed up successfully", 
+    res.json({
+      message: "User signed up successfully",
       userId: newUser.id,
       token: token
     });
@@ -172,10 +172,10 @@ export async function signin(req, res, next) {
     const { email, password } = req.body;
 
     if (!email || email.trim() === "") {
-      return res.status(400).json({ message: "*email required" }); 
+      return res.status(400).json({ message: "*email required" });
     }
     if (!password || password.trim() === "") {
-      return res.status(400).json({ message: "*password required" }); 
+      return res.status(400).json({ message: "*password required" });
     }
 
     const users = await getUserByEmail(email);
@@ -204,7 +204,7 @@ export async function signin(req, res, next) {
       await updateUserPasswordService(user.id, hashedPassword);
       logger.info(`Migrated user ${user.email} to hashed password`, { userId: user.id });
     }
-    
+
     if (!isMatch) {
       logger.warn("Signin failed: Invalid password", { email, userId: user.id });
       return res.status(401).json({ message: "Invalid password" });
@@ -218,9 +218,9 @@ export async function signin(req, res, next) {
 
     logger.info("User signin succeeded", { userId: user.id, email });
 
-    res.json({ 
-      message: "Signed in successfully", 
-      userId: user.id, 
+    res.json({
+      message: "Signed in successfully",
+      userId: user.id,
       name: user.name,
       token: token
     });
@@ -232,9 +232,9 @@ export async function signin(req, res, next) {
 
 export async function verifyToken(req, res) {
   // req.user is populated by authMiddleware
-  res.json({ 
-    valid: true, 
-    user: req.user 
+  res.json({
+    valid: true,
+    user: req.user
   });
 }
 
@@ -272,11 +272,11 @@ export async function getUserProfile(req, res, next) {
   try {
     const id = req.user.id; // Secure extraction from token
     const users = await getUserById(id);
-    
+
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     const safeUser = { ...users[0] };
     delete safeUser.password;
 
@@ -290,15 +290,15 @@ export async function updateUserProfile(req, res, next) {
   try {
     const id = req.user.id; // Secure extraction from token
     const { name, email, startMarker } = req.body;
-    
+
     if (
-      (!name || name.trim() === "") && 
-      (!email || email.trim() === "") && 
+      (!name || name.trim() === "") &&
+      (!email || email.trim() === "") &&
       (startMarker === undefined)
     ) {
       return res.status(400).json({ message: "Name, email, or start marker is required" });
     }
-    
+
     if (name) {
       if (name.length < 2 || name.length > 50) {
         return res.status(400).json({ message: "Name must be between 2 and 50 characters" });
@@ -313,20 +313,20 @@ export async function updateUserProfile(req, res, next) {
       if (!emailRegex.test(email)) {
         return res.status(400).json({ message: "Valid email required" });
       }
-      
+
       const existingUsers = await getUserByEmail(email);
       if (existingUsers && existingUsers.length > 0 && existingUsers[0].id !== parseInt(id)) {
         return res.status(400).json({ message: "User with this email already exists" });
       }
     }
-    
+
     const updatedData = {};
     if (name) updatedData.name = name;
     if (email) updatedData.email = email;
     if (startMarker !== undefined) updatedData.startMarker = startMarker;
 
     const updatedUsers = await updateUser(id, updatedData);
-    
+
     if (!updatedUsers || updatedUsers.length === 0) {
       return res.status(500).json({ message: "Failed to update user profile" });
     }
@@ -355,12 +355,12 @@ const otpStore = new Map();
 export async function requestPasswordOTP(req, res, next) {
   try {
     const id = req.user.id; // Secure extraction from token
-    
+
     const users = await getUserById(id);
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     const user = users[0];
     if (!user.email) {
       return res.status(400).json({ message: "No email associated with this account" });
@@ -368,7 +368,7 @@ export async function requestPasswordOTP(req, res, next) {
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
     // Store OTP with 10 minute expiration
     otpStore.set(String(id), {
       otp,
@@ -378,12 +378,12 @@ export async function requestPasswordOTP(req, res, next) {
     // Send email
     logger.info("Sending password change OTP email", { userId: id });
     const emailSent = await sendPasswordOTPEmail(user.email, user.name, otp);
-    
+
     if (!emailSent) {
       logger.error("Email send failed for password reset OTP", null, { userId: id, email: user.email });
       return res.status(500).json({ message: "Failed to send OTP email" });
     }
-    
+
     res.json({ message: "OTP sent successfully" });
   } catch (err) {
     next(err);
@@ -394,11 +394,11 @@ export async function changePassword(req, res, next) {
   try {
     const id = req.user.id; // Secure extraction from token
     const { otp, newPassword } = req.body;
-    
+
     if (!otp || !newPassword) {
       return res.status(400).json({ message: "OTP and new password are required" });
     }
-    
+
     // Password strength check
     if (newPassword.length < 8) {
       return res.status(400).json({ message: "Password must be at least 8 characters" });
@@ -413,26 +413,26 @@ export async function changePassword(req, res, next) {
     if (!storedData) {
       return res.status(400).json({ message: "No OTP requested or OTP expired" });
     }
-    
+
     if (Date.now() > storedData.expiresAt) {
       otpStore.delete(String(id));
       return res.status(400).json({ message: "OTP has expired" });
     }
-    
+
     if (storedData.otp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
-    
+
     // OTP is valid, clear it
     otpStore.delete(String(id));
-    
+
     // Hash new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
-    
+
     // Update password in DB
     await updateUserPasswordService(id, hashedPassword);
-    
+
     // Send confirmation email
     const users = await getUserById(id);
     if (users && users.length > 0 && users[0].email) {
@@ -441,7 +441,7 @@ export async function changePassword(req, res, next) {
         logger.error("Email send failed for password change confirmation", e, { userId: id, email: users[0].email });
       });
     }
-    
+
     logger.info("User password changed successfully via OTP", { userId: id });
     res.json({ message: "Password changed successfully" });
   } catch (err) {
@@ -455,37 +455,37 @@ const forgotPasswordOtpStore = new Map();
 export async function forgotPasswordOTP(req, res, next) {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
-    
+
     const users = await getUserByEmail(email);
     if (!users || users.length === 0) {
       logger.warn("Forgot password OTP request failed: Email not found", { email });
       return res.status(404).json({ message: "User with this email not found" });
     }
-    
+
     const user = users[0];
-    
+
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
     // Store OTP under the email key
     forgotPasswordOtpStore.set(email, {
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000
     });
-    
+
     // Send email
     logger.info("Sending forgot password OTP email", { email });
     const emailSent = await sendPasswordOTPEmail(email, user.name, otp);
-    
+
     if (!emailSent) {
       logger.error("Email send failed for forgot password OTP", null, { email });
       return res.status(500).json({ message: "Failed to send OTP email" });
     }
-    
+
     res.json({ message: "OTP sent successfully" });
   } catch (err) {
     next(err);
@@ -495,11 +495,11 @@ export async function forgotPasswordOTP(req, res, next) {
 export async function forgotPasswordReset(req, res, next) {
   try {
     const { email, otp, newPassword } = req.body;
-    
+
     if (!email || !otp || !newPassword) {
       return res.status(400).json({ message: "Email, OTP, and new password are required" });
     }
-    
+
     // Password strength check
     if (newPassword.length < 8) {
       return res.status(400).json({ message: "Password must be at least 8 characters" });
@@ -508,45 +508,45 @@ export async function forgotPasswordReset(req, res, next) {
     if (!passwordRegex.test(newPassword)) {
       return res.status(400).json({ message: "Password must contain at least one letter and one number" });
     }
-    
+
     // Verify OTP
     const storedData = forgotPasswordOtpStore.get(email);
     if (!storedData) {
       return res.status(400).json({ message: "No OTP requested or OTP expired" });
     }
-    
+
     if (Date.now() > storedData.expiresAt) {
       forgotPasswordOtpStore.delete(email);
       return res.status(400).json({ message: "OTP has expired" });
     }
-    
+
     if (storedData.otp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
-    
+
     // OTP is valid, clear it
     forgotPasswordOtpStore.delete(email);
-    
+
     // Find user to get ID
     const users = await getUserByEmail(email);
     if (!users || users.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
     const user = users[0];
-    
+
     // Hash new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
-    
+
     // Update password
     await updateUserPasswordService(user.id, hashedPassword);
-    
+
     // Send confirmation email
     logger.info("Sending password change confirmation email for reset", { email });
     sendPasswordChangeEmail(user.email, user.name).catch(e => {
       logger.error("Email send failed for forgot password reset confirmation", e, { email: user.email });
     });
-    
+
     logger.info("Forgot password reset completed successfully", { userId: user.id, email });
     res.json({ message: "Password reset successfully. You can now log in." });
   } catch (err) {

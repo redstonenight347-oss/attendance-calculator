@@ -22,7 +22,7 @@ function updateStatus(status, isError = false) {
 
     syncStatusElement.textContent = status;
     syncStatusElement.className = 'sync-indicator ' + (isError ? 'error' : '');
-    
+
     if (status === SyncStatus.IDLE) {
         syncStatusElement.classList.add('synced');
     } else if (status === SyncStatus.UNSAVED) {
@@ -72,7 +72,7 @@ export function clearAllDirty() {
 export function updateGlobalSaveButton() {
     const btn = document.getElementById('global-save-btn');
     if (!btn) return;
-    
+
     if (isDirty()) {
         btn.style.display = 'block';
     } else {

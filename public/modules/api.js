@@ -9,7 +9,7 @@ async function authenticatedFetch(url, options = {}) {
     }
 
     const response = await fetch(url, { ...options, headers });
-    
+
     if (response.status === 401) {
         // Session expired or invalid
         localStorage.removeItem('token');
@@ -17,7 +17,7 @@ async function authenticatedFetch(url, options = {}) {
         window.location.href = '/';
         throw new Error('Session expired. Please log in again.');
     }
-    
+
     return response;
 }
 

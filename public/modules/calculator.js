@@ -8,7 +8,7 @@ export function calculateNewStats(dashboard, subjectId, oldStatus, newStatus) {
 
     // Helper to check if a status counts as a class attempt
     const isCounted = (status) => status === 'present' || status === 'absent';
-    
+
     // 1. Remove effects of old status
     if (oldStatus === 'present') {
         subject.total_classes--;
@@ -26,8 +26,8 @@ export function calculateNewStats(dashboard, subjectId, oldStatus, newStatus) {
     }
 
     // 3. Recalculate subject percentage
-    subject.attendance_percentage = subject.total_classes > 0 
-        ? Math.round((subject.attended_classes / subject.total_classes) * 100) 
+    subject.attendance_percentage = subject.total_classes > 0
+        ? Math.round((subject.attended_classes / subject.total_classes) * 100)
         : 0;
 
     // 4. Recalculate Overall Stats

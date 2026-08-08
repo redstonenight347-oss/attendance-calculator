@@ -1,4 +1,4 @@
-import { pgTable,serial,integer,text,timestamp,date,uniqueIndex,index,pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, date, uniqueIndex, index, pgEnum } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // enums
@@ -12,7 +12,7 @@ export const dayEnum = pgEnum("day_enum", [
   "sunday",
 ]);
 
-export const attendanceStatusEnum = pgEnum("attendance_status", ["present","absent","cancelled"]);
+export const attendanceStatusEnum = pgEnum("attendance_status", ["present", "absent", "cancelled"]);
 
 // users
 export const users = pgTable("users", {

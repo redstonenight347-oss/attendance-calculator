@@ -2,21 +2,21 @@ import { fetchDashboardData } from './modules/api.js';
 import { getUserId } from './modules/utils.js';
 import { Storage } from './modules/storage.js';
 import { isDirty, getDirtyKeys, clearAllDirty, setSyncStatus, SyncStatus } from './modules/sync.js';
-import { 
-    populateEditSubjects, 
-    addSubjectInput, 
+import {
+    populateEditSubjects,
+    addSubjectInput,
     deleteAllSubjects,
     getSubjectsToSave
 } from './modules/subjects.js';
-import { 
-    initTimetable, 
-    setAvailableSubjects, 
-    switchDay, 
+import {
+    initTimetable,
+    setAvailableSubjects,
+    switchDay,
     addPeriod,
     getPeriodsData
 } from './modules/timetable.js';
-import { 
-    initCalendar, 
+import {
+    initCalendar,
     markAttendance,
     markWholeDay,
     openExtraClassModal,
@@ -28,16 +28,16 @@ import {
     getPendingLogsToSave,
     refreshLogsAfterSave
 } from './modules/calendar.js';
-import { 
-    saveProfile, 
-    copyUserId, 
-    openChangeEmailModal, 
-    closeChangeEmailModal, 
-    confirmChangeEmail, 
-    openChangePasswordModal, 
-    closeChangePasswordModal, 
-    requestPasswordOTP, 
-    confirmChangePassword 
+import {
+    saveProfile,
+    copyUserId,
+    openChangeEmailModal,
+    closeChangeEmailModal,
+    confirmChangeEmail,
+    openChangePasswordModal,
+    closeChangePasswordModal,
+    requestPasswordOTP,
+    confirmChangePassword
 } from './modules/profile.js';
 import { verifyTokenApi, saveSubjectsApi, saveTimetableApi, saveAttendanceLogApi } from './modules/api.js';
 import { initTheme } from './modules/theme.js';
@@ -46,15 +46,15 @@ import { initTheme } from './modules/theme.js';
 // Expose functions to global scope immediately for HTML onclicks
 window.showSection = async (sectionId, navLink) => {
     if (isDirty()) {
-        const proceed = window.customConfirm ? 
+        const proceed = window.customConfirm ?
             await window.customConfirm("You have unsaved changes. Navigating away will discard them.", "Unsaved Changes", "⚠️", "Edit", "Discard") :
             confirm("You have unsaved changes. Click OK to discard, or Cancel to edit.");
-            
+
         if (!proceed) {
             // User chose Edit (Cancel)
             return;
         }
-        
+
         // User chose Discard
         clearAllDirty();
         window.refreshDashboard(); // Re-render DOM from server data
@@ -62,7 +62,7 @@ window.showSection = async (sectionId, navLink) => {
 
     document.querySelectorAll('.content-section').forEach(sec => sec.style.display = 'none');
     document.getElementById(sectionId).style.display = 'block';
-    
+
     document.querySelectorAll('.sidebar-nav a').forEach(link => link.classList.remove('active'));
     if (navLink) navLink.classList.add('active');
 
@@ -95,7 +95,7 @@ window.openHelp = (target) => {
     // Find the link for "How to Use" to pass it to showSection for active states
     const helpLink = document.querySelector('a[onclick*="help-section"]');
     window.showSection('help-section', helpLink);
-    
+
     setTimeout(() => {
         const element = document.getElementById(`help-${target}`);
         if (element) {
@@ -123,7 +123,7 @@ async function initialize(userId) {
             if (data.overall !== null && data.overall !== undefined) mergedData.overall = data.overall;
             if (data.timetable !== null && data.timetable !== undefined) mergedData.timetable = data.timetable;
             if (data.user !== null && data.user !== undefined) mergedData.user = data.user;
-            
+
             renderDashboardUI(mergedData, skipSections);
             return;
         }
@@ -232,7 +232,7 @@ function bindDashboardEvents() {
 
     const confirmChangeEmailBtn = document.getElementById('confirm-change-email-btn');
     if (confirmChangeEmailBtn) {
-        confirmChangeEmailBtn.addEventListener('click', function() {
+        confirmChangeEmailBtn.addEventListener('click', function () {
             confirmChangeEmail(confirmChangeEmailBtn);
         });
     }
@@ -242,7 +242,7 @@ function bindDashboardEvents() {
 
     const btnRequestOtp = document.getElementById('btn-request-otp');
     if (btnRequestOtp) {
-        btnRequestOtp.addEventListener('click', function() {
+        btnRequestOtp.addEventListener('click', function () {
             requestPasswordOTP(btnRequestOtp);
         });
     }
@@ -261,7 +261,7 @@ function bindDashboardEvents() {
 
     const btnConfirmPassword = document.getElementById('btn-confirm-password');
     if (btnConfirmPassword) {
-        btnConfirmPassword.addEventListener('click', function() {
+        btnConfirmPassword.addEventListener('click', function () {
             confirmChangePassword(btnConfirmPassword);
         });
     }
@@ -282,12 +282,12 @@ function bindDashboardEvents() {
 document.addEventListener("DOMContentLoaded", async () => {
     initTheme();
     bindDashboardEvents();
-    
+
     // Mobile Header Scroll Logic
     let lastScrollTop = 0;
     const mobileHeader = document.querySelector('.mobile-header');
     const mainContent = document.querySelector('.main-content');
-    
+
     mainContent.addEventListener('scroll', () => {
         let scrollTop = mainContent.scrollTop;
         if (scrollTop > lastScrollTop && scrollTop > 50) {
@@ -370,12 +370,12 @@ function renderDashboardUI(data, skipSections = []) {
     displaySubjects(data.subjects);
     displayOverall(data.overall);
     checkAndDisplayPendingWarning();
-    
+
     // Only update edit forms if not explicitly skipped (to avoid focus loss)
     if (!skipSections.includes('subjects')) {
         populateEditSubjects(data.subjects);
     }
-    
+
     if (!skipSections.includes('timetable')) {
         setAvailableSubjects(data.subjects);
         initTimetable(data.timetable);
@@ -399,7 +399,7 @@ function renderDashboardUI(data, skipSections = []) {
         }
         const profileIdDisplay = document.getElementById('profile-id-display');
         if (profileIdDisplay) profileIdDisplay.textContent = data.user.id;
-        
+
         const profileEmailDisplay = document.getElementById('profile-email-display');
         if (profileEmailDisplay && data.user.email) profileEmailDisplay.textContent = data.user.email;
     }
@@ -471,7 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (openBtn) openBtn.addEventListener('click', openSidebar);
     if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
     if (overlay) overlay.addEventListener('click', closeSidebar);
-    
+
     window.closeSidebar = closeSidebar;
     window.openSidebar = openSidebar;
 });
@@ -493,13 +493,13 @@ window.togglePasswordVisibility = togglePasswordVisibility;
 function checkAndDisplayPendingWarning() {
     const output2 = document.getElementById("output2");
     if (!output2) return;
-    
+
     // Remove any existing banner first
     const existing = document.querySelector('.pending-warning-banner');
     if (existing) existing.remove();
-    
+
     if (typeof window.getOldestPendingDate !== 'function') return;
-    
+
     const pendingInfo = window.getOldestPendingDate();
     if (!pendingInfo) return;
 
@@ -573,7 +573,7 @@ async function saveAllChanges() {
 
     const dirtyKeys = getDirtyKeys();
     setSyncStatus(SyncStatus.SAVING);
-    
+
     const saveBtn = document.getElementById('global-save-btn');
     if (saveBtn) {
         saveBtn.disabled = true;
@@ -598,18 +598,18 @@ async function saveAllChanges() {
         }
 
         clearAllDirty();
-        
+
         if (window.customAlert) {
             await window.customAlert("All changes saved successfully!", "Success", "success");
         } else {
             alert("All changes saved successfully!");
         }
-        
+
         if (saveBtn) {
             saveBtn.disabled = false;
             saveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 inline-block mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.75V16.5M12 12l4.5 4.5M16.5 16.5l4.5-4.5M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5" /></svg> Save Changes`;
         }
-        
+
         // Fetch the new fresh data from the DB to ensure UI is completely up to date
         window.refreshDashboard();
 

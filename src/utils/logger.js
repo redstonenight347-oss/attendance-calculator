@@ -16,8 +16,8 @@ export const logger = {
     }));
   },
   error: (message, error = null, meta = {}) => {
-    const errorDetails = error 
-      ? { error: error.message, stack: error.stack } 
+    const errorDetails = error
+      ? { error: error.message, stack: error.stack }
       : {};
     console.error(JSON.stringify({
       timestamp: new Date().toISOString(),

@@ -3,7 +3,7 @@ import { logger } from "../utils/logger.js";
 
 export async function getAttendance(req, res, next) {
   const userID = req.user.id; // Secure extraction from token
- 
+
   try {
     const data = await getDashboardData(userID);
     res.json(data);
@@ -15,7 +15,7 @@ export async function getAttendance(req, res, next) {
 export async function saveTimetable(req, res, next) {
   const userID = req.user.id; // Secure extraction from token
   const { timetable } = req.body;
-  
+
   try {
     await saveTimetableService(userID, timetable);
     logger.info("Timetable saved successfully", { userId: userID });

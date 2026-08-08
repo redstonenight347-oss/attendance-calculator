@@ -154,7 +154,7 @@ async function fetchMonthlyLogs() {
     const userId = getUserId();
 
     if (!userId) return;
-    
+
     await _fetchMonthlyLogsInternal(userId);
 }
 
@@ -164,7 +164,7 @@ async function _fetchMonthlyLogsInternal(userId) {
     isFetchingLogs = true;
     try {
         const freshLogs = await fetchMonthlyLogsApi(year, month);
-        
+
         // Merge unsaved pending changes to prevent background fetch from overwriting user edits
         const protectedLogs = [...pendingLogsQueue];
         if (protectedLogs.length > 0) {
@@ -176,7 +176,7 @@ async function _fetchMonthlyLogsInternal(userId) {
                     if (pendingLog.timetableId && formatDate(l.date) === pendingLog.date && Number(l.timetable_id) === Number(pendingLog.timetableId)) return true;
                     return false;
                 });
-                
+
                 if (pendingLog.status === 'clear') {
                     if (idx > -1) freshLogs.splice(idx, 1);
                 } else if (idx > -1) {
@@ -184,7 +184,7 @@ async function _fetchMonthlyLogsInternal(userId) {
                 } else {
                     // Not found in server data — this is a new entry (likely extra class with temp_ id)
                     // Only add if it's not already represented (avoid duplicates)
-                    const alreadyAdded = freshLogs.some(l => 
+                    const alreadyAdded = freshLogs.some(l =>
                         pendingLog.id && l.id === pendingLog.id
                     );
                     if (!alreadyAdded) {
@@ -200,7 +200,7 @@ async function _fetchMonthlyLogsInternal(userId) {
                 }
             });
         }
-        
+
         attendanceLogsCache = freshLogs;
     } catch (err) {
         console.error("Error fetching logs:", err);
@@ -215,52 +215,52 @@ export function renderCalendar() {
     const calendarGrid = document.getElementById('calendarDays');
     const currentMonthLabel = document.getElementById('monthDisplay');
     if (!calendarGrid || !currentMonthLabel) return;
-    
+
     calendarGrid.innerHTML = '';
     const year = currentViewDate.getFullYear();
     const month = currentViewDate.getMonth();
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     currentMonthLabel.textContent = `${monthNames[month]} ${year}`;
-    
+
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     for (let i = 0; i < firstDay; i++) {
         calendarGrid.appendChild(document.createElement('div'));
     }
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, month, day);
         const dateStr = formatDate(date);
         const dayDiv = document.createElement('div');
         dayDiv.className = 'calendar-day';
         dayDiv.textContent = day;
-        
+
         if (dateStr === formatDate(new Date())) dayDiv.classList.add('today');
         if (dateStr === formatDate(selectedDate)) dayDiv.classList.add('selected');
         if (date.getDay() === 0) dayDiv.classList.add('sunday');
-        
+
         const dayLogs = attendanceLogsCache.filter(l => formatDate(l.date) === dateStr);
         const markersContainer = document.createElement('div');
         markersContainer.className = 'day-markers';
-        
+
         // Pending check: if it's a previous day and has periods but NO logs for some periods
         const startMarkerStr = getStartMarker();
         const startMarkerDate = startMarkerStr ? new Date(startMarkerStr) : null;
-        if (startMarkerDate) startMarkerDate.setHours(0,0,0,0);
+        if (startMarkerDate) startMarkerDate.setHours(0, 0, 0, 0);
         const currentDateObj = new Date(date);
-        currentDateObj.setHours(0,0,0,0);
-        const isPast = currentDateObj < new Date(new Date().setHours(0,0,0,0)) && (!startMarkerDate || currentDateObj >= startMarkerDate);
-        
+        currentDateObj.setHours(0, 0, 0, 0);
+        const isPast = currentDateObj < new Date(new Date().setHours(0, 0, 0, 0)) && (!startMarkerDate || currentDateObj >= startMarkerDate);
+
         const dayPeriods = getPeriodsData()[date.toLocaleDateString('en-US', { weekday: 'long' })] || [];
-        
+
         // Build set of subject IDs from timetable periods (to distinguish timetable logs from true extra classes)
         const timetableSubjectIds = new Set(dayPeriods.filter(p => p.name).map(p => Number(p.id)));
-        
+
         // Extra = logs without timetable_id that also don't belong to any timetable period's subject
         let hasExtra = dayLogs.some(l => !l.timetable_id && !timetableSubjectIds.has(Number(l.subject_id)));
         let hasCancelled = dayLogs.some(l => l.status === 'cancelled');
-        
+
         const hasPending = isPast && dayPeriods.some(p => {
             if (!p.name) return false;
             if (p.timetableId) return !dayLogs.some(l => Number(l.timetable_id) === Number(p.timetableId));
@@ -274,7 +274,7 @@ export function renderCalendar() {
         if (startMarkerStr && startMarkerStr === dateStr) {
             markersContainer.innerHTML += '<span class="marker marker-s" style="background: #3b82f6; color: white; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 50%; padding: 0;">S</span>';
         }
-        
+
         dayDiv.appendChild(markersContainer);
 
         if (dayLogs.length > 0) {
@@ -288,14 +288,14 @@ export function renderCalendar() {
             else if (allAbsent) dayDiv.classList.add('cal-absent');
             else if (allPresent) dayDiv.classList.add('cal-present');
         }
-        
+
         dayDiv.onclick = () => {
             selectedDate = new Date(year, month, day);
             renderCalendar();
             renderDayAttendance();
             updateMarkerButton();
         };
-        
+
         calendarGrid.appendChild(dayDiv);
     }
 }
@@ -316,12 +316,12 @@ export function renderDayAttendance() {
     }
     const selectedDateStr = formatDate(selectedDate);
     const claimedLogIds = new Set(); // Track logs matched to timetable periods
-    
+
     const startMarkerStr = getStartMarker();
     const startMarkerDate = startMarkerStr ? new Date(startMarkerStr) : null;
-    if (startMarkerDate) startMarkerDate.setHours(0,0,0,0);
+    if (startMarkerDate) startMarkerDate.setHours(0, 0, 0, 0);
     const selectedDateObj = new Date(selectedDate);
-    selectedDateObj.setHours(0,0,0,0);
+    selectedDateObj.setHours(0, 0, 0, 0);
     const isBeforeStartMarker = !startMarkerStr || (startMarkerDate && selectedDateObj < startMarkerDate);
 
     daySubjects.forEach(subject => {
@@ -341,7 +341,7 @@ export function renderDayAttendance() {
 
         const slot = document.createElement('div');
         slot.className = `attendance-slot slot-${status}`;
-        
+
         let overlayHtml = '';
         if (!isBeforeStartMarker) {
             overlayHtml = `
@@ -361,7 +361,7 @@ export function renderDayAttendance() {
             </div>
             ${overlayHtml}
         `;
-        
+
         if (!isBeforeStartMarker) {
             slot.querySelectorAll('.overlay-btn').forEach(btn => {
                 btn.onclick = (e) => {
@@ -392,9 +392,9 @@ export function renderDayAttendance() {
 function renderExtraClasses(selectedDateStr, slotsWrapper, claimedLogIds = new Set()) {
     const startMarkerStr = getStartMarker();
     const startMarkerDate = startMarkerStr ? new Date(startMarkerStr) : null;
-    if (startMarkerDate) startMarkerDate.setHours(0,0,0,0);
+    if (startMarkerDate) startMarkerDate.setHours(0, 0, 0, 0);
     const selectedDateObj = new Date(selectedDateStr);
-    selectedDateObj.setHours(0,0,0,0);
+    selectedDateObj.setHours(0, 0, 0, 0);
     const isBeforeStartMarker = !startMarkerStr || (startMarkerDate && selectedDateObj < startMarkerDate);
 
     const extraLogs = attendanceLogsCache.filter(l => formatDate(l.date) === selectedDateStr && !l.timetable_id && !claimedLogIds.has(l.id));
@@ -423,7 +423,7 @@ function renderExtraClasses(selectedDateStr, slotsWrapper, claimedLogIds = new S
                 </div>
                 ${overlayHtml}
             `;
-            
+
             if (!isBeforeStartMarker) {
                 slot.querySelectorAll('.overlay-btn').forEach(btn => {
                     btn.onclick = (e) => {
@@ -455,9 +455,9 @@ export async function markAttendance(subjectName, status, event, timetableId, su
     if (event) event.stopPropagation();
     const userId = getUserId();
     const dateStr = formatDate(selectedDate);
-    
+
     // 1. Find old status for calculations
-    const existingIndex = isNewExtraClass ? -1 : attendanceLogsCache.findIndex(l => 
+    const existingIndex = isNewExtraClass ? -1 : attendanceLogsCache.findIndex(l =>
         (logId && l.id === logId) || (formatDate(l.date) === dateStr && (timetableId ? Number(l.timetable_id) === Number(timetableId) : false))
     );
     const oldStatus = existingIndex > -1 ? attendanceLogsCache[existingIndex].status : 'pending';
@@ -472,7 +472,7 @@ export async function markAttendance(subjectName, status, event, timetableId, su
         logId = logId || `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
         attendanceLogsCache.push({ id: logId, date: dateStr, subject_id: subjectId, timetable_id: timetableId, status, subject_name: subjectName });
     }
-    
+
     renderCalendar();
     renderDayAttendance();
 
@@ -485,7 +485,7 @@ export async function markAttendance(subjectName, status, event, timetableId, su
 
     // 4. Queue for manual sync
     const logData = { id: logId, date: dateStr, subjectId, timetableId, status, subjectName };
-    const queueIdx = pendingLogsQueue.findIndex(l => 
+    const queueIdx = pendingLogsQueue.findIndex(l =>
         (logId && l.id === logId) || (l.date === dateStr && (timetableId ? l.timetableId === timetableId : false))
     );
     if (queueIdx > -1) pendingLogsQueue[queueIdx] = logData;
@@ -502,9 +502,9 @@ export async function markWholeDay(status) {
     }
     if (startMarkerStr) {
         const startMarkerDate = new Date(startMarkerStr);
-        startMarkerDate.setHours(0,0,0,0);
+        startMarkerDate.setHours(0, 0, 0, 0);
         const selectedDateObj = new Date(selectedDate);
-        selectedDateObj.setHours(0,0,0,0);
+        selectedDateObj.setHours(0, 0, 0, 0);
         if (selectedDateObj < startMarkerDate) {
             if (window.customAlert) window.customAlert('Cannot edit attendance before the start marker.', 'Info', 'info');
             return;
@@ -515,7 +515,7 @@ export async function markWholeDay(status) {
     const dateStr = formatDate(selectedDate);
     const daySubjects = getPeriodsData()[selectedDate.toLocaleDateString('en-US', { weekday: 'long' })] || [];
     const newLogs = daySubjects.filter(s => s.name).map(s => ({ date: dateStr, subjectId: s.id, timetableId: s.timetableId, status: status === 'holiday' ? 'cancelled' : status, subjectName: s.name }));
-    
+
     if (newLogs.length === 0) return;
 
     let dashboardCache = window.latestDashboardData || null;
@@ -524,7 +524,7 @@ export async function markWholeDay(status) {
         // Local calendar update
         const idx = attendanceLogsCache.findIndex(l => formatDate(l.date) === dateStr && Number(l.timetable_id) === Number(newLog.timetableId));
         const oldStatus = idx > -1 ? attendanceLogsCache[idx].status : 'pending';
-        
+
         if (status === 'clear') {
             if (idx > -1) attendanceLogsCache.splice(idx, 1);
         } else if (idx > -1) {
@@ -532,7 +532,7 @@ export async function markWholeDay(status) {
         } else {
             attendanceLogsCache.push({ ...newLog, timetable_id: newLog.timetableId, subject_id: newLog.subjectId });
         }
-        
+
         // Local dashboard update
         if (dashboardCache && oldStatus !== newLog.status) {
             dashboardCache = calculateNewStats(dashboardCache, newLog.subjectId, oldStatus, newLog.status);
@@ -576,9 +576,9 @@ export function openExtraClassModal() {
     }
     if (startMarkerStr) {
         const startMarkerDate = new Date(startMarkerStr);
-        startMarkerDate.setHours(0,0,0,0);
+        startMarkerDate.setHours(0, 0, 0, 0);
         const selectedDateObj = new Date(selectedDate);
-        selectedDateObj.setHours(0,0,0,0);
+        selectedDateObj.setHours(0, 0, 0, 0);
         if (selectedDateObj < startMarkerDate) {
             if (window.customAlert) window.customAlert('Cannot edit attendance before the start marker.', 'Info', 'info');
             return;
@@ -661,7 +661,7 @@ export function updateMarkerButton() {
     const btn = document.getElementById('toggleMarkerBtn');
     if (!btn) return;
     const currentMarker = getStartMarker();
-    
+
     if (currentMarker) {
         btn.textContent = `Remove Marker (${currentMarker})`;
         btn.className = 'bulk-btn btn-cancelled-mini'; // Use existing red button style
@@ -687,12 +687,12 @@ export async function promptForStartMarker(customMessage = 'Please set a Start M
             'How to Set',
             'Set Marker'
         );
-        
+
         if (action === false) {
             // "How to Set" option clicked: Open the How to Use guide and scroll to it with a violet glow!
             const helpLink = document.querySelector('a[data-section="help-section"]');
             if (window.showSection) window.showSection('help-section', helpLink);
-            
+
             // Wait for section to activate, then scroll & glow the block
             setTimeout(() => {
                 const el = document.getElementById('help-attendance');
@@ -712,7 +712,7 @@ export async function promptForStartMarker(customMessage = 'Please set a Start M
             // "Set Marker" option clicked: Navigate to attendance and scroll to the blue button with a blue glow!
             const attLink = document.querySelector('a[data-section="attendance-section"]');
             if (window.showSection) window.showSection('attendance-section', attLink);
-            
+
             setTimeout(() => {
                 const btn = document.getElementById('toggleMarkerBtn');
                 if (btn) {
@@ -729,11 +729,11 @@ export async function promptForStartMarker(customMessage = 'Please set a Start M
         }
     } else if (window.customAlert) {
         await window.customAlert(customMessage, 'Action Required', 'warning');
-        
+
         // Default to navigating to the attendance section and highlighting the marker button
         const attLink = document.querySelector('a[data-section="attendance-section"]');
         if (window.showSection) window.showSection('attendance-section', attLink);
-        
+
         // Wait a tiny bit for the UI to show
         setTimeout(() => {
             const btn = document.getElementById('toggleMarkerBtn');
@@ -751,10 +751,10 @@ export function getOldestPendingDate() {
     const startMarkerStr = getStartMarker();
     if (!startMarkerStr) return null;
     const startMarkerDate = new Date(startMarkerStr);
-    startMarkerDate.setHours(0,0,0,0);
+    startMarkerDate.setHours(0, 0, 0, 0);
 
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
 
     const periodsData = getPeriodsData();
 
@@ -762,20 +762,20 @@ export function getOldestPendingDate() {
     for (let d = 1; d <= 60; d++) {
         const checkDate = new Date();
         checkDate.setDate(today.getDate() - d);
-        checkDate.setHours(0,0,0,0);
+        checkDate.setHours(0, 0, 0, 0);
 
         if (checkDate < startMarkerDate) break;
 
         const dateStr = formatDate(checkDate);
         const year = checkDate.getFullYear();
         const month = checkDate.getMonth() + 1;
-        
+
         const monthLogs = attendanceLogsCache.filter(l => {
             const logDate = new Date(l.date);
             return logDate.getFullYear() === year && logDate.getMonth() + 1 === month;
         });
         const dayLogs = monthLogs.filter(l => formatDate(l.date) === dateStr);
-        
+
         const dayName = checkDate.toLocaleDateString('en-US', { weekday: 'long' });
         const dayPeriods = periodsData[dayName] || [];
 
@@ -808,7 +808,7 @@ export function openPendingDate(dateStr) {
     renderCalendar();
     renderDayAttendance();
     updateMarkerButton();
-    
+
     // Fetch logs in background for freshness
     debouncedFetchLogs();
 }

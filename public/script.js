@@ -1,7 +1,7 @@
 function toggleAuth() {
     document.getElementById('signin-section').classList.toggle('hidden');
     document.getElementById('signup-section').classList.toggle('hidden');
-    
+
     // Reset signup step display states
     const step1 = document.getElementById('signup-step-1');
     const step2 = document.getElementById('signup-step-2');
@@ -62,7 +62,7 @@ async function signinRequest() {
         });
 
         const response = await post.json();
-        
+
         if (!post.ok) {
             output.innerHTML = `<p class="error-text">${response.message}</p>`;
         } else {
@@ -220,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initTheme();
     const token = localStorage.getItem("token");
     const userId = localStorage.getItem("userId");
-    
+
     if (token && userId) {
         window.location.href = "/dashboard.html";
         return;
@@ -313,7 +313,7 @@ function showForgotPassword() {
     document.getElementById('signin-section').classList.add('hidden');
     document.getElementById('signup-section').classList.add('hidden');
     document.getElementById('forgot-password-section').classList.remove('hidden');
-    
+
     // Reset view
     document.getElementById('forgot-step-1').style.display = 'block';
     document.getElementById('forgot-step-2').style.display = 'none';
@@ -330,33 +330,33 @@ async function requestForgotPasswordOTP() {
     const email = document.getElementById('forgot-email').value.trim();
     const btn = document.getElementById('forgot-otp-btn');
     const output = document.getElementById('forgot-output');
-    
+
     output.textContent = '';
-    
+
     if (!email) {
         output.innerHTML = `<p class="error-text">Email ID is required.</p>`;
         return;
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         output.innerHTML = `<p class="error-text">Please enter a valid email address.</p>`;
         return;
     }
-    
+
     const originalText = btn.innerText;
     btn.disabled = true;
     const interval = startStatusRotation(btn, originalText);
-    
+
     try {
         const res = await fetch("/users/forgot-password/otp", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email })
         });
-        
+
         const data = await res.json();
-        
+
         if (!res.ok) {
             output.innerHTML = `<p class="error-text">${data.message || 'Failed to send OTP'}</p>`;
         } else {
@@ -380,32 +380,32 @@ async function resetPasswordWithOTP() {
     const newPassword = document.getElementById('forgot-new-password').value.trim();
     const btn = document.getElementById('forgot-reset-btn');
     const output = document.getElementById('forgot-output');
-    
+
     output.textContent = '';
-    
+
     if (!otp || !newPassword) {
         output.innerHTML = `<p class="error-text">OTP and new password are required.</p>`;
         return;
     }
-    
+
     if (newPassword.length < 6) {
         output.innerHTML = `<p class="error-text">Password must be at least 6 characters.</p>`;
         return;
     }
-    
+
     const originalText = btn.innerText;
     btn.disabled = true;
     const interval = startStatusRotation(btn, originalText);
-    
+
     try {
         const res = await fetch("/users/forgot-password/reset", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, otp, newPassword })
         });
-        
+
         const data = await res.json();
-        
+
         if (!res.ok) {
             output.innerHTML = `<p class="error-text">${data.message || 'Failed to reset password'}</p>`;
         } else {

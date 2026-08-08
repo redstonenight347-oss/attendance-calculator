@@ -2,7 +2,7 @@ import { db } from "../db/db.js"
 import { sql, eq, inArray } from "drizzle-orm";
 import { timetable, attendanceLogs } from "../db/schema.js";
 import { getUserById } from "./users.services.js";
- 
+
 export async function getDashboardData(userId) {
   const [stats, tt, userResults] = await Promise.all([
     getSubjectStatsInternal(userId),
@@ -55,7 +55,7 @@ async function getSubjectStatsInternal(userId) {
     const total = Number(row.total_classes);
     const attended = Number(row.attended_classes);
     const percentage = total === 0 ? 0 : Number(((attended * 100) / total).toFixed(2));
-    
+
     let status_message = "No classes held yet.";
     let classes_needed = 0;
     let bunk_available = 0;
@@ -88,16 +88,16 @@ async function getTimetableInternal(userId) {
     WHERE t.user_id = ${userId}
     ORDER BY t.day_of_week, t.period_number;
   `);
-  
+
   const tt = { monday: [], tuesday: [], wednesday: [], thursday: [], friday: [], saturday: [], sunday: [] };
-  
+
   rows.forEach(row => {
     const day = row.day_of_week.toLowerCase();
     const idx = row.period_number - 1;
     while (tt[day].length <= idx) tt[day].push({ id: null, name: '' });
     tt[day][idx] = { id: row.subject_id, name: row.subject_name, timetableId: row.timetable_id };
   });
-  
+
   return tt;
 }
 
@@ -125,7 +125,7 @@ export async function saveTimetableService(userId, timetableData) {
     const toDeleteIds = existingSlots
       .filter(s => !incomingKeys.includes(`${s.dayOfWeek}-${s.periodNumber}`))
       .map(s => s.id);
-    
+
     if (toDeleteIds.length > 0) {
       await tx.delete(timetable).where(inArray(timetable.id, toDeleteIds));
     }
@@ -166,15 +166,15 @@ export async function saveAttendanceLogsService(userId, logs) {
   return await db.transaction(async (tx) => {
     for (const log of logs) {
       const { id: logId, timetableId, subjectId, date, status } = log;
-      
+
       if (status === 'clear') {
         let condition;
         if (logId && !String(logId).startsWith('temp_')) {
-            condition = eq(attendanceLogs.id, parseInt(logId));
+          condition = eq(attendanceLogs.id, parseInt(logId));
         } else {
-            condition = timetableId 
-              ? sql`${attendanceLogs.userId} = ${uId} AND ${attendanceLogs.timetableId} = ${timetableId} AND ${attendanceLogs.date} = ${date}`
-              : sql`${attendanceLogs.userId} = ${uId} AND ${attendanceLogs.subjectId} = ${subjectId} AND ${attendanceLogs.timetableId} IS NULL AND ${attendanceLogs.date} = ${date} AND ${attendanceLogs.id} = (SELECT id FROM attendance_logs WHERE user_id=${uId} AND subject_id=${subjectId} AND timetable_id IS NULL AND date=${date} LIMIT 1)`;
+          condition = timetableId
+            ? sql`${attendanceLogs.userId} = ${uId} AND ${attendanceLogs.timetableId} = ${timetableId} AND ${attendanceLogs.date} = ${date}`
+            : sql`${attendanceLogs.userId} = ${uId} AND ${attendanceLogs.subjectId} = ${subjectId} AND ${attendanceLogs.timetableId} IS NULL AND ${attendanceLogs.date} = ${date} AND ${attendanceLogs.id} = (SELECT id FROM attendance_logs WHERE user_id=${uId} AND subject_id=${subjectId} AND timetable_id IS NULL AND date=${date} LIMIT 1)`;
         }
         await tx.delete(attendanceLogs).where(condition);
         continue;
@@ -182,13 +182,13 @@ export async function saveAttendanceLogsService(userId, logs) {
 
       let existing = null;
       if (logId && !String(logId).startsWith('temp_')) {
-          const res = await tx.select().from(attendanceLogs).where(eq(attendanceLogs.id, parseInt(logId)));
-          existing = res[0];
+        const res = await tx.select().from(attendanceLogs).where(eq(attendanceLogs.id, parseInt(logId)));
+        existing = res[0];
       } else if (timetableId) {
-          const res = await tx.select().from(attendanceLogs).where(
-              sql`${attendanceLogs.userId} = ${uId} AND ${attendanceLogs.timetableId} = ${timetableId} AND ${attendanceLogs.date} = ${date}`
-          );
-          existing = res[0];
+        const res = await tx.select().from(attendanceLogs).where(
+          sql`${attendanceLogs.userId} = ${uId} AND ${attendanceLogs.timetableId} = ${timetableId} AND ${attendanceLogs.date} = ${date}`
+        );
+        existing = res[0];
       }
 
       if (existing) {

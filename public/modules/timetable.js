@@ -11,9 +11,9 @@ let periodsData = {
 
 export function initTimetable(timetable) {
     if (!timetable) return;
-    
+
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    
+
     days.forEach(day => {
         const backendDay = day.toLowerCase();
         if (timetable[backendDay] && timetable[backendDay].length > 0) {
@@ -23,7 +23,7 @@ export function initTimetable(timetable) {
             periodsData[day] = Array(6).fill(null).map(() => ({ id: null, name: '' }));
         }
     });
-    
+
     renderPeriods();
 }
 
@@ -37,14 +37,14 @@ export function switchDay(day) {
     currentDay = day;
     const label = document.getElementById('current-day-label');
     if (label) label.textContent = day;
-    
+
     document.querySelectorAll('.day-btn').forEach(btn => {
         const btnText = btn.textContent.trim().toLowerCase();
         const dayShort = day.substring(0, 3).toLowerCase();
         if (btnText === dayShort) btn.classList.add('active');
         else btn.classList.remove('active');
     });
-    
+
     renderPeriods();
 }
 
@@ -58,15 +58,15 @@ export function renderPeriods() {
     const container = document.getElementById('daily-timetable-container');
     if (!container) return;
     container.innerHTML = '';
-    
+
     periodsData[currentDay].forEach((period, index) => {
         const slot = document.createElement('div');
         slot.className = 'period-slot';
         slot.dataset.index = index;
-        
+
         const content = document.createElement('div');
         content.className = 'slot-content';
-        
+
         if (period.name) {
             content.textContent = period.name;
             slot.dataset.id = period.id;
@@ -74,7 +74,7 @@ export function renderPeriods() {
         } else {
             content.textContent = `P${index + 1}`;
         }
-        
+
         // Remove Period Button (The '×' button)
         const removeBtn = document.createElement('button');
         removeBtn.className = 'slot-action-btn remove-btn';
@@ -94,14 +94,14 @@ export function renderPeriods() {
             addBtn.title = 'Assign Subject';
             slot.appendChild(addBtn);
         }
-        
+
         slot.appendChild(content);
-        
+
         // Click to toggle subject picker
         slot.onclick = () => showSubjectPicker(slot, index);
-        
 
-        
+
+
         container.appendChild(slot);
     });
 
@@ -128,10 +128,10 @@ function showSubjectPicker(anchor, index) {
 
     const picker = document.createElement('div');
     picker.className = 'subject-picker-overlay';
-    
+
     const list = document.createElement('div');
     list.className = 'subject-picker-list';
-    
+
     const header = document.createElement('div');
     header.className = 'picker-header';
     header.textContent = 'Select Subject';
